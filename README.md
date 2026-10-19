@@ -1,32 +1,69 @@
-# React + TypeScript + Vite
+# 🎣 Mancing Kuis Nusantara
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Game web 3D: mancing ikan di sungai (POV pemancing) dengan latar gunung, desa, dan persawahan. Setiap ikan yang didapat memunculkan **soal kuis** — jawab dengan benar untuk menambah skor. Skor + waktu dikirim ke **leaderboard global**.
 
-Currently, two official plugins are available:
+Untuk mahasiswa — main langsung di browser, tanpa install.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Cara Main
 
-## React Compiler
+1. Input nama → Mulai
+2. **Klik / tap / spasi** untuk melempar kail
+3. Saat ikan menyambar (bobber bergerak) → klik lagi untuk mengait
+4. Tarik saat marker putih di **zona hijau** (makin langka ikannya, makin sempit zonanya)
+5. Jawab soal kuis yang muncul — cepat = bonus poin!
+6. Kalau gagal menarik, ikan lepas dan soal **gugur** (0 poin)
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### Skor
 
-## Expanding the Oxlint configuration
+`Poin = nilai soal + bonus kecepatan (maks +20) + bonus kelangkaan ikan (+10 s/d +100)`
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
+Leaderboard diurutkan: skor tertinggi, lalu waktu tercepat.
 
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+## Setup
+
+```bash
+npm install
+npm run dev
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+### 1. Soal Kuis (Google Sheets)
+
+Isi soal di spreadsheet dengan format:
+
+| No | Soal | a | b | c | d | Kunci Jawaban | Nilai per soal |
+|----|------|---|---|---|---|---------------|----------------|
+| 1 | ... | ... | ... | ... | ... | A/B/C/D | 20 |
+
+Lalu: **File → Share → Publish to web → CSV**, salin link-nya ke `.env`:
+
+```
+VITE_QUESTIONS_CSV_URL=https://docs.google.com/spreadsheets/d/.../pub?output=csv
+```
+
+Tanpa `.env`, game pakai 3 soal contoh.
+
+### 2. Leaderboard Global (Supabase — opsional)
+
+1. Buat project gratis di [supabase.com](https://supabase.com)
+2. Buka **SQL Editor**, jalankan isi `supabase/leaderboard.sql`
+3. Salis **Project URL** + **anon key** ke `.env`:
+
+```
+VITE_SUPABASE_URL=https://xxxx.supabase.co
+VITE_SUPABASE_ANON_KEY=eyJhbGci...
+```
+
+Tanpa Supabase, game tetap jalan (leaderboard disembunyikan).
+
+## Deploy (Vercel)
+
+```bash
+npm i -g vercel
+vercel
+```
+
+Isi environment variables yang sama di dashboard Vercel.
+
+## Tech Stack
+
+React 19 · Vite · TypeScript · Three.js (@react-three/fiber) · Tailwind CSS · Zustand · Supabase
