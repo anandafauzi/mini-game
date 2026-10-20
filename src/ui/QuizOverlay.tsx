@@ -1,39 +1,25 @@
 import { useEffect, useState } from 'react'
 import { QUESTION_TIME_LIMIT, useGame } from '../lib/gameState'
-import { RARITY_COLOR, RARITY_LABEL } from '../lib/fish'
 
 export function QuizOverlay() {
   const phase = useGame((s) => s.phase)
-  const caughtFish = useGame((s) => s.caughtFish)
-  const caughtFishInfo = useGame((s) => s.caughtFishInfo)
   const questions = useGame((s) => s.questions)
   const questionIndex = useGame((s) => s.questionIndex)
   const answerQuiz = useGame((s) => s.answerQuiz)
-  const proceedToQuiz = useGame((s) => s.proceedToQuiz)
-  const lastPoints = useGame((s) => s.lastPoints)
   const results = useGame((s) => s.results)
+  const lastPoints = useGame((s) => s.lastPoints)
 
-  const [showCatch, setShowCatch] = useState(false)
   const [selected, setSelected] = useState<'a' | 'b' | 'c' | 'd' | null>(null)
   const [timeLeft, setTimeLeft] = useState(QUESTION_TIME_LIMIT)
 
   const question = questions[questionIndex]
 
   useEffect(() => {
-    if (phase === 'catch' && caughtFish) {
-      setShowCatch(true)
-      setSelected(null)
-      const t = window.setTimeout(() => {
-        setShowCatch(false)
-        proceedToQuiz()
-      }, 2600)
-      return () => window.clearTimeout(t)
-    }
     if (phase === 'quiz') {
       setSelected(null)
       setTimeLeft(QUESTION_TIME_LIMIT)
     }
-  }, [phase, caughtFish, proceedToQuiz])
+  }, [phase])
 
   useEffect(() => {
     if (phase !== 'quiz' || selected) return
@@ -58,30 +44,6 @@ export function QuizOverlay() {
   }, [phase, selected, answerQuiz])
 
   const lastResult = results[results.length - 1]
-
-  if (phase === 'catch' && caughtFish && showCatch) {
-    return (
-      <div data-ui className="fixed inset-0 z-40 flex items-center justify-center pointer-events-none">
-        <div className="animate-bounce rounded-2xl bg-black/70 px-10 py-8 text-center text-white">
-          <div className="text-6xl">🐟</div>
-          <div className="mt-2 text-2xl font-black">{caughtFish.name}!</div>
-          <div
-            className="mt-1 inline-block rounded-full px-3 py-0.5 text-sm font-bold"
-            style={{ backgroundColor: RARITY_COLOR[caughtFish.rarity] }}
-          >
-            {RARITY_LABEL[caughtFish.rarity]} +{caughtFishInfo?.bonus ?? caughtFish.bonus} poin
-          </div>
-          <div className="mt-2 text-xs font-semibold">
-            {caughtFishInfo?.inGreen ? (
-              <span className="text-emerald-300">Tepat di zona hijau! Ikan besar 🎣</span>
-            ) : (
-              <span className="text-sky-200">Dapat ikan! Tarik pas zona hijau untuk ikan lebih besar</span>
-            )}
-          </div>
-        </div>
-      </div>
-    )
-  }
 
   if (phase === 'quiz' && question) {
     const pct = (timeLeft / QUESTION_TIME_LIMIT) * 100

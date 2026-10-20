@@ -48,6 +48,7 @@ interface GameState {
   startGame: () => void
   onFishCaught: (fish: FishSpecies, info: CatchInfo) => void
   proceedToQuiz: () => void
+  returnToFishing: () => void
   onFishEscaped: () => void
   consumeReelAttempt: () => void
   answerQuiz: (choice: 'a' | 'b' | 'c' | 'd' | null) => void
@@ -119,6 +120,15 @@ export const useGame = create<GameState>((set, get) => ({
       phase: 'quiz',
       quizStartedAt: Date.now(),
     }),
+
+  returnToFishing: () =>
+    set((s) => ({
+      phase: 'fishing',
+      caughtFish: null,
+      caughtFishInfo: null,
+      reelAttemptsLeft: MAX_REEL_ATTEMPTS,
+      gameStartedAt: s.gameStartedAt || Date.now(),
+    })),
 
   onFishEscaped: () => {
     const { questions, questionIndex, results } = get()

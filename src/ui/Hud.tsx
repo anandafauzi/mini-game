@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { useGame } from '../lib/gameState'
+import { useProgress, xpForLevel } from '../lib/progress'
+import { useTime, formatClock } from '../lib/timeOfDay'
 import { useFishingAction } from '../lib/useFishingAction'
+import { joystick } from '../lib/playerInput'
 
 function Icon({ path, className = '' }: { path: string; className?: string }) {
   return (
@@ -20,25 +23,32 @@ const ICON = {
 
 function TopLeft() {
   const playerName = useGame((s) => s.playerName)
-  const score = useGame((s) => s.score)
-  const level = 1 + Math.floor(score / 100)
-  const xp = score % 100
+  const level = useProgress((s) => s.level)
+  const xp = useProgress((s) => s.xp)
+  const money = useProgress((s) => s.money)
+  const need = xpForLevel(level)
+  const xpPct = Math.min(100, Math.round((xp / need) * 100))
 
   return (
     <div data-ui className="fixed top-3 left-3 z-30 flex items-center gap-3 rounded-2xl border border-white/15 bg-black/45 px-3 py-2 text-white backdrop-blur-md">
       <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/25 text-emerald-300">
         <Icon path={ICON.mountain} className="h-5 w-5" />
       </div>
-      <div className="min-w-[130px]">
+      <div className="min-w-[150px]">
         <div className="flex items-center justify-between">
           <span className="text-sm font-bold leading-tight">Sungai Lestari</span>
           <span className="rounded-md bg-amber-400/20 px-1.5 text-[10px] font-bold text-amber-300">
             Lv {level}
           </span>
         </div>
-        <div className="text-[10px] text-white/70">{playerName || 'Pemancing'}</div>
+        <div className="flex items-center justify-between text-[10px] text-white/70">
+          <span>{playerName || 'Pemancing'}</span>
+          <span className="font-bold text-emerald-300">
+            Rp {money.toLocaleString('id-ID')}
+          </span>
+        </div>
         <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-white/15">
-          <div className="h-full rounded-full bg-emerald-400" style={{ width: `${xp}%` }} />
+          <div className="h-full rounded-full bg-emerald-400" style={{ width: `${xpPct}%` }} />
         </div>
       </div>
     </div>
@@ -46,27 +56,17 @@ function TopLeft() {
 }
 
 function TopRight({ onPause }: { onPause: () => void }) {
-  const [time, setTime] = useState('06:30')
-
-  useEffect(() => {
-    const start = Date.now()
-    const id = window.setInterval(() => {
-      const mins = Math.floor((Date.now() - start) / 1000 / 6)
-      const h = (6 + Math.floor(mins / 60)) % 24
-      const m = mins % 60
-      setTime(`${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`)
-    }, 1000)
-    return () => window.clearInterval(id)
-  }, [])
+  const clock = useTime((s) => s.clock)
+  const period = useTime((s) => s.period)
+  const label = period === 'pagi' ? 'Pagi' : period === 'siang' ? 'Siang' : period === 'sore' ? 'Sore' : 'Malam'
+  const icon = period === 'malam' ? '🌙' : '☀️'
 
   return (
     <div data-ui className="fixed top-3 right-3 z-30 flex items-center gap-2 text-white">
       <div className="flex items-center gap-2 rounded-2xl border border-white/15 bg-black/45 px-3 py-2 backdrop-blur-md">
-        <span className="text-sm font-bold tabular-nums">{time}</span>
-        <span className="text-amber-300">
-          <Icon path={ICON.sun} className="h-4 w-4" />
-        </span>
-        <span className="hidden text-[10px] text-white/70 sm:inline">Cerah</span>
+        <span className="text-sm font-bold tabular-nums">{formatClock(clock)}</span>
+        <span className="text-sm">{icon}</span>
+        <span className="hidden text-[10px] text-white/70 sm:inline">{label}</span>
       </div>
       <button
         onClick={onPause}
@@ -79,7 +79,7 @@ function TopRight({ onPause }: { onPause: () => void }) {
 }
 
 function FishCounter() {
-  const count = useGame((s) => s.fishCaughtCount)
+  const count = useProgress((s) => s.totalCaught)
   return (
     <div data-ui className="fixed top-1/2 right-3 z-30 flex -translate-y-1/2 flex-col items-center rounded-2xl border border-white/15 bg-black/45 px-2.5 py-3 text-white backdrop-blur-md">
       <span className="text-sky-300">
@@ -111,6 +111,8 @@ function Joystick() {
       dy = (dy / len) * max
     }
     setKnob({ x: dx, y: dy })
+    joystick.x = dx / max
+    joystick.y = -dy / max
   }
 
   useEffect(() => {
@@ -121,6 +123,8 @@ function Joystick() {
     const onUp = () => {
       active.current = false
       setKnob({ x: 0, y: 0 })
+      joystick.x = 0
+      joystick.y = 0
     }
     window.addEventListener('pointermove', onMove)
     window.addEventListener('pointerup', onUp)
@@ -161,12 +165,12 @@ export function FishingControls() {
 
   const label =
     state === 'idle'
-      ? 'Lempar'
+      ? 'CAST'
       : isBite
-        ? 'TARIK!'
+        ? 'HOOK!'
         : isReeling
-          ? 'Gulung'
-          : 'Menunggu'
+          ? 'REEL'
+          : '...'
 
   return (
     <>
@@ -193,7 +197,7 @@ export function FishingControls() {
   )
 }
 
-export function Hud({ onPause }: { onPause: () => void }) {
+export function Hud({ onPause, onOpenBag }: { onPause: () => void; onOpenBag: () => void }) {
   const phase = useGame((s) => s.phase)
   if (phase !== 'fishing') return null
 
@@ -203,6 +207,14 @@ export function Hud({ onPause }: { onPause: () => void }) {
       <TopRight onPause={onPause} />
       <FishCounter />
       <Joystick />
+      <button
+        data-ui
+        onClick={onOpenBag}
+        className="fixed bottom-6 left-44 z-30 flex h-14 w-14 flex-col items-center justify-center rounded-2xl border border-white/15 bg-black/45 text-white backdrop-blur-md transition hover:bg-black/60 active:scale-95"
+      >
+        <span className="text-xl">🎒</span>
+        <span className="text-[9px] font-bold">Tas</span>
+      </button>
     </>
   )
 }

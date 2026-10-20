@@ -5,11 +5,14 @@ import { useGame } from './lib/gameState'
 import { loadQuestions } from './lib/questions'
 import { StartScreen } from './ui/StartScreen'
 import { QuizOverlay } from './ui/QuizOverlay'
+import { CatchPanel } from './ui/CatchPanel'
 import { LeaderboardWidget } from './ui/Leaderboard'
 import { Hud, FishingControls } from './ui/Hud'
+import { Inventory } from './ui/Inventory'
 import { PauseScreen } from './ui/PauseScreen'
 import { ResultScreen } from './ui/ResultScreen'
 import { pauseAmbient, resumeAmbient } from './lib/audio'
+import { useTime } from './lib/timeOfDay'
 
 const DEFAULT_QUESTIONS_CSV_URL =
   'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ89t10uH61U1DFch8HSsCBWc4yzt8o19DttoGdF_B3fCWrf-GthMEnVcihVdNhXaUkJc8tZNFSsQAD/pub?output=csv'
@@ -20,21 +23,47 @@ export default function App() {
   const phase = useGame((s) => s.phase)
   const setQuestions = useGame((s) => s.setQuestions)
   const backToMenu = useGame((s) => s.backToMenu)
+  const setTimePaused = useTime((s) => s.setPaused)
   const [paused, setPaused] = useState(false)
+  const [bagOpen, setBagOpen] = useState(false)
 
   const handlePause = () => {
     setPaused(true)
+    setTimePaused(true)
     pauseAmbient()
   }
   const handleResume = () => {
     setPaused(false)
+    setTimePaused(false)
     resumeAmbient()
   }
   const handleQuit = () => {
     setPaused(false)
+    setTimePaused(false)
     resumeAmbient()
     backToMenu()
   }
+
+  // ESC opens pause menu while fishing
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.code === 'Escape' && phase === 'fishing') {
+        if (bagOpen) {
+          setBagOpen(false)
+        } else {
+          setPaused((p) => {
+            const next = !p
+            setTimePaused(next)
+            if (next) pauseAmbient()
+            else resumeAmbient()
+            return next
+          })
+        }
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [phase, bagOpen, setTimePaused])
 
   useEffect(() => {
     loadQuestions(QUESTIONS_CSV_URL)
@@ -81,11 +110,13 @@ export default function App() {
         <div className="pointer-events-none absolute inset-0 cinematic-vignette" />
       </div>
 
-      <Hud onPause={handlePause} />
+      <Hud onPause={handlePause} onOpenBag={() => setBagOpen(true)} />
       <FishingControls />
       <LeaderboardWidget />
       <QuizOverlay />
+      <CatchPanel />
       <ResultScreen />
+      {bagOpen && <Inventory onClose={() => setBagOpen(false)} />}
       {paused && phase === 'fishing' && <PauseScreen onResume={handleResume} onQuit={handleQuit} />}
       {phase === 'menu' && <StartScreen />}
     </div>

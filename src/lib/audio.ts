@@ -3,6 +3,8 @@ let masterGain: GainNode | null = null
 let riverGain: GainNode | null = null
 let windGain: GainNode | null = null
 let started = false
+let muted = false
+let volume = 0.35
 
 function createNoiseBuffer(context: AudioContext, seconds = 2): AudioBuffer {
   const buffer = context.createBuffer(1, context.sampleRate * seconds, context.sampleRate)
@@ -25,7 +27,7 @@ export function startAmbient() {
   if (!AudioCtor) return
   ctx = new AudioCtor()
   masterGain = ctx.createGain()
-  masterGain.gain.value = 0.35
+  masterGain.gain.value = muted ? 0 : volume
   masterGain.connect(ctx.destination)
 
   // River: filtered brown noise
@@ -157,6 +159,54 @@ export function playAlertSound() {
   osc.stop(now + 0.2)
 }
 
+let reelNoise: { src: AudioBufferSourceNode; gain: GainNode } | null = null
+
+/** Start a looping reel/line-tension noise (call while reeling). */
+export function startReelLoop() {
+  if (!ctx || !masterGain || reelNoise) return
+  const src = ctx.createBufferSource()
+  src.buffer = createNoiseBuffer(ctx, 1)
+  src.loop = true
+  const filter = ctx.createBiquadFilter()
+  filter.type = 'bandpass'
+  filter.frequency.value = 2600
+  filter.Q.value = 1.2
+  const gain = ctx.createGain()
+  gain.gain.value = 0.0
+  gain.gain.linearRampToValueAtTime(0.08, ctx.currentTime + 0.1)
+  src.connect(filter).connect(gain).connect(masterGain)
+  src.start()
+  reelNoise = { src, gain }
+}
+
+export function stopReelLoop() {
+  if (!reelNoise || !ctx) return
+  const { src, gain } = reelNoise
+  gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.15)
+  setTimeout(() => {
+    try {
+      src.stop()
+    } catch {
+      /* already stopped */
+    }
+  }, 200)
+  reelNoise = null
+}
+
+export function setVolume(v: number) {
+  volume = Math.max(0, Math.min(1, v))
+  if (masterGain && !muted) masterGain.gain.value = volume
+}
+
+export function setMuted(m: boolean) {
+  muted = m
+  if (masterGain) masterGain.gain.value = m ? 0 : volume
+}
+
+export function isMuted() {
+  return muted
+}
+
 export function isAudioStarted() {
   return started
 }
@@ -169,5 +219,5 @@ export function pauseAmbient() {
 export function resumeAmbient() {
   if (!started || !ctx) return
   ctx.resume()
-  if (masterGain) masterGain.gain.value = 0.35
+  if (masterGain) masterGain.gain.value = muted ? 0 : volume
 }
