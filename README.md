@@ -6,16 +6,26 @@ Untuk mahasiswa — main langsung di browser, tanpa install.
 
 ## Cara Main
 
-1. Input nama → Mulai
-2. **Klik / tap / spasi** untuk melempar kail
-3. Saat ikan menyambar (bobber bergerak) → klik lagi untuk mengait
-4. Tarik saat marker putih di **zona hijau** (makin langka ikannya, makin sempit zonanya)
-5. Jawab soal kuis yang muncul — cepat = bonus poin!
-6. Kalau gagal menarik, ikan lepas dan soal **gugur** (0 poin)
+1. Input nama → Mulai (suara ambient sungai/angin/burung otomatis menyala)
+2. **Tombol "Lempar Kail"** atau tekan **Spasi/Enter** untuk melempar kail
+3. **Geser layar** (drag) untuk menoleh melihat sekitar — gunung, desa, sawah
+4. Saat ikan menyambar (indikator "Ikan makan umpan!" + ring kuning) → tekan **Tarik**
+5. Tarik saat marker putih di **zona hijau** (makin langka ikannya, makin sempit zonanya)
+6. Gagal tarik? Kamu punya **3 kesempatan** per soal. Habis 3x → ikan lepas & soal gugur
+7. Jawab soal kuis yang muncul — **waktu 2 menit**, cepat = bonus poin!
+
+### Fitur
+
+- Grafis 3D: air sungai beriak (fresnel + shimmer), gunung bersalju, sawah terasering, desa, awan bergerak, burung terbang
+- Audio ambient: suara sungai, angin bertiup (LFO gust), kicau burung acak, efek lempar/splas/tangkap
+- Kamera POV yang bisa ditoleh (drag look-around)
+- 9 jenis ikan air tawar (common → legendary)
+- Panel kuis dari Google Sheets (edit spreadsheet → game langsung update)
+- Leaderboard global Supabase
 
 ### Skor
 
-`Poin = nilai soal + bonus kecepatan (maks +20) + bonus kelangkaan ikan (+10 s/d +100)`
+`Poin = nilai soal + bonus kecepatan (maks +20, berbasis waktu 2 menit) + bonus kelangkaan ikan (+10 s/d +100)`
 
 Leaderboard diurutkan: skor tertinggi, lalu waktu tercepat.
 
