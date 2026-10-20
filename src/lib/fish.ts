@@ -94,6 +94,20 @@ export const FISH_SPECIES: FishSpecies[] = [
     spawnWeight: 16, preferredBaits: ['pelet', 'daun'],
     activity: { pagi: 0.9, siang: 0.8, sore: 0.7, malam: 0.3 },
   },
+  {
+    id: 'layang', name: 'Ikan Layang', rarity: 'common', color: '#5b8fb9', bellyColor: '#eaf4fb',
+    finColor: '#3a6785', shape: 'torpedo', pattern: 'spots',
+    size: 0.32, minWeight: 0.04, maxWeight: 0.35, pricePerKg: 24000, bonus: 10, reelDifficulty: 0.24,
+    spawnWeight: 19, preferredBaits: ['artifisial', 'pelet'],
+    activity: { pagi: 0.9, siang: 0.8, sore: 0.9, malam: 0.3 },
+  },
+  {
+    id: 'belanak', name: 'Ikan Belanak', rarity: 'common', color: '#9aa8b5', bellyColor: '#f4f7fa',
+    finColor: '#6d7c8a', shape: 'round', pattern: 'none',
+    size: 0.38, minWeight: 0.15, maxWeight: 1.2, pricePerKg: 28000, bonus: 10, reelDifficulty: 0.27,
+    spawnWeight: 15, preferredBaits: ['lumut', 'daun', 'pelet'],
+    activity: { pagi: 0.9, siang: 0.6, sore: 0.8, malam: 0.3 },
+  },
   /* ---------- Sedang (medium) ---------- */
   {
     id: 'ekor_kuning', name: 'Ikan Ekor Kuning', rarity: 'uncommon', color: '#2f7bbf', bellyColor: '#e0f2fe',
@@ -174,11 +188,32 @@ export const FISH_SPECIES: FishSpecies[] = [
     activity: { pagi: 0.8, siang: 0.6, sore: 0.8, malam: 0.5 },
   },
   {
+    id: 'barakuda', name: 'Ikan Barakuda', rarity: 'rare', color: '#8fa3b0', bellyColor: '#f1f5f9',
+    finColor: '#5b6d7a', shape: 'torpedo', pattern: 'spots',
+    size: 0.8, minWeight: 2, maxWeight: 9, pricePerKg: 98000, bonus: 50, reelDifficulty: 0.74,
+    spawnWeight: 4, preferredBaits: ['artifisial', 'cacing'],
+    activity: { pagi: 0.7, siang: 0.5, sore: 0.8, malam: 0.7 },
+  },
+  {
     id: 'marlin', name: 'Ikan Marlin', rarity: 'legendary', color: '#1e3a5f', bellyColor: '#e0f2fe',
     finColor: '#132a45', shape: 'long', pattern: 'bands',
     size: 1.05, minWeight: 20, maxWeight: 120, pricePerKg: 180000, bonus: 100, reelDifficulty: 0.9,
     spawnWeight: 1.4, preferredBaits: ['artifisial'],
     activity: { pagi: 0.5, siang: 0.5, sore: 0.7, malam: 0.6 },
+  },
+  {
+    id: 'todak', name: 'Ikan Todak', rarity: 'legendary', color: '#2c4a63', bellyColor: '#dceaf5',
+    finColor: '#1a3348', shape: 'long', pattern: 'none',
+    size: 1.12, minWeight: 30, maxWeight: 180, pricePerKg: 200000, bonus: 100, reelDifficulty: 0.91,
+    spawnWeight: 1.1, preferredBaits: ['artifisial'],
+    activity: { pagi: 0.5, siang: 0.6, sore: 0.7, malam: 0.4 },
+  },
+  {
+    id: 'pari', name: 'Ikan Pari', rarity: 'legendary', color: '#6b5b4a', bellyColor: '#e8ddcc',
+    finColor: '#4a3f33', shape: 'flat', pattern: 'spots',
+    size: 1.0, minWeight: 8, maxWeight: 60, pricePerKg: 150000, bonus: 100, reelDifficulty: 0.86,
+    spawnWeight: 1.3, preferredBaits: ['cacing', 'pelet'],
+    activity: { pagi: 0.5, siang: 0.7, sore: 0.6, malam: 0.5 },
   },
   {
     id: 'hiu', name: 'Hiu Karang', rarity: 'legendary', color: '#5b6773', bellyColor: '#e7edf2',

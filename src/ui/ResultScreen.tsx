@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useGame } from '../lib/gameState'
 import { fetchTopLeaderboard, submitScore, supabaseEnabled, type LeaderboardEntry } from '../lib/supabase'
+import { submitScoreToSheet } from '../lib/sheetScore'
 import { formatDuration } from './Leaderboard'
 
 export function ResultScreen() {
@@ -20,11 +21,15 @@ export function ResultScreen() {
   const escapedCount = results.length - caughtCount
 
   useEffect(() => {
-    if (phase !== 'result' || submitted || !supabaseEnabled) return
+    if (phase !== 'result' || submitted) return
     setSubmitted(true)
-    submitScore(playerName, score, totalPlayTimeMs).then(() =>
-      fetchTopLeaderboard(10).then(setTop),
-    )
+    // kirim skor ke spreadsheet kelas (opsional) dan/atau leaderboard Supabase
+    submitScoreToSheet(playerName, score, totalPlayTimeMs)
+    if (supabaseEnabled) {
+      submitScore(playerName, score, totalPlayTimeMs).then(() =>
+        fetchTopLeaderboard(10).then(setTop),
+      )
+    }
   }, [phase, submitted, playerName, score, totalPlayTimeMs])
 
   useEffect(() => {

@@ -64,8 +64,9 @@ export function FishingRod({ castProgress, tension, tipRef }: FishingRodProps) {
 
   return (
     <group>
-      {/* First-person rig anchored lower-right, angled toward the sea ahead (-z) */}
-      <group ref={rodRef} position={[0.5, -0.42, -0.5]} rotation={[0.15, -0.12, 0]}>
+      {/* First-person rod; lateral/down offset is handled by the camera-frustum
+          anchor in FishingScene, so this group only carries the small local pose. */}
+      <group ref={rodRef} position={[0, 0.02, -0.28]} rotation={[0.18, -0.1, 0]}>
         {/* grip / handle (nearest the player) */}
         <mesh castShadow position={[0, -0.05, 0.24]} rotation={[Math.PI / 2, 0, 0]}>
           <cylinderGeometry args={[0.03, 0.037, 0.6, 12]} />
@@ -133,7 +134,7 @@ export function FishingLine({
   const lineObj = useMemo(() => {
     const geo = new THREE.BufferGeometry()
     geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(6), 3))
-    const mat = new THREE.LineBasicMaterial({ color: '#e8eef2', transparent: true, opacity: 0.5 })
+    const mat = new THREE.LineBasicMaterial({ color: '#f8fafc', transparent: true, opacity: 0.95 })
     return new THREE.Line(geo, mat)
   }, [])
 
@@ -165,6 +166,14 @@ export function FishingLine({
 }
 
 export function Bobber({ position, dip = 0 }: { position: [number, number, number]; dip?: number }) {
+  const metal = useMemo(
+    () => new THREE.MeshStandardMaterial({ color: '#d4d9de', metalness: 0.85, roughness: 0.25 }),
+    [],
+  )
+  const bait = useMemo(
+    () => new THREE.MeshStandardMaterial({ color: '#b98a52', roughness: 0.8 }),
+    [],
+  )
   return (
     <group position={[position[0], position[1] - dip, position[2]]}>
       <mesh castShadow>
@@ -184,6 +193,19 @@ export function Bobber({ position, dip = 0 }: { position: [number, number, numbe
           roughness={0.3}
           metalness={0.2}
         />
+      </mesh>
+      {/* sinker + J-hook + bait hanging under the float so the kail is visible */}
+      <mesh position={[0, -0.1, 0]}>
+        <sphereGeometry args={[0.026, 10, 10]} />
+        <primitive object={metal} attach="material" />
+      </mesh>
+      <mesh position={[0, -0.17, 0]} rotation={[0, 0, Math.PI * 0.9]}>
+        <torusGeometry args={[0.035, 0.007, 6, 14, Math.PI * 1.35]} />
+        <primitive object={metal} attach="material" />
+      </mesh>
+      <mesh position={[0.03, -0.2, 0]}>
+        <sphereGeometry args={[0.02, 8, 8]} />
+        <primitive object={bait} attach="material" />
       </mesh>
     </group>
   )

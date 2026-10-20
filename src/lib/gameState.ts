@@ -92,7 +92,21 @@ export const useGame = create<GameState>((set, get) => ({
   usedQuestionIds: [],
 
   setPlayerName: (name) => set({ playerName: name }),
-  setQuestions: (questions) => set({ questions }),
+  // Drop duplicate questions on load (same id or same wording) so a question
+  // can never appear twice in a session even if the spreadsheet has repeats.
+  setQuestions: (questions) => {
+    const seenIds = new Set<number>()
+    const seenText = new Set<string>()
+    const deduped: Question[] = []
+    for (const q of questions) {
+      const key = q.text.trim().toLowerCase().replace(/\s+/g, ' ')
+      if (seenIds.has(q.id) || seenText.has(key)) continue
+      seenIds.add(q.id)
+      seenText.add(key)
+      deduped.push(q)
+    }
+    set({ questions: deduped })
+  },
 
   startGame: () =>
     set({

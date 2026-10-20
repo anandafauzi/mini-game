@@ -98,11 +98,19 @@ function Island({
 export function Islands() {
   const islands = useMemo(
     () => [
-      // near-shore islets around the boat (visible while fishing)
+      // small rocky/palm islets close to the boat (visible while fishing)
+      { pos: [-28, -1.0, -38] as [number, number, number], size: 14, seed: 61 },
+      { pos: [24, -1.1, -52] as [number, number, number], size: 16, seed: 67 },
+      { pos: [-55, -1.2, -95] as [number, number, number], size: 18, seed: 71 },
+      { pos: [86, -1.3, -62] as [number, number, number], size: 22, seed: 73 },
+      // near-shore islets around the boat
       { pos: [-46, -1.2, -70] as [number, number, number], size: 20, seed: 41 },
       { pos: [58, -1.4, -88] as [number, number, number], size: 26, seed: 47 },
       { pos: [-72, -1.3, -140] as [number, number, number], size: 30, seed: 53 },
       { pos: [40, -1.6, -170] as [number, number, number], size: 34, seed: 59 },
+      { pos: [10, -1.5, -210] as [number, number, number], size: 44, seed: 79 },
+      // behind the boat, for when the player turns around
+      { pos: [-8, -1.2, 96] as [number, number, number], size: 24, seed: 83 },
       // distant tropical islands on the horizon
       { pos: [-160, -2, -420] as [number, number, number], size: 70, seed: 3 },
       { pos: [210, -3, -520] as [number, number, number], size: 110, seed: 9 },

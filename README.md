@@ -19,7 +19,7 @@ Untuk mahasiswa — main langsung di browser, tanpa install.
 - Grafis 3D: samudra dengan ombak Gerstner (fresnel + sun glitter + busa puncak), kapal yang mengikuti gelombang, pulau tropis, burung laut, kabut laut
 - Audio ambient: suara ombak (swell LFO), angin bertiup (LFO gust), kicau burung acak, efek lempar/splash/tangkap
 - Kamera POV yang bisa ditoleh (drag look-around)
-- 15 jenis ikan laut (common → legendary), tiap spesies punya siluet & pola tubuh berbeda
+- 20 jenis ikan laut (common → legendary), tiap spesies punya siluet & pola tubuh berbeda
 - Soal kuis tidak berulang dalam satu sesi — sesi berakhir otomatis kalau soal habis
 - Panel kuis dari Google Sheets (edit spreadsheet → game langsung update)
 - Leaderboard global Supabase (satu baris per pemain, skor akhir menang)
@@ -53,7 +53,22 @@ VITE_QUESTIONS_CSV_URL=https://docs.google.com/spreadsheets/d/.../pub?output=csv
 
 Tanpa `.env`, game pakai 3 soal contoh.
 
-### 2. Leaderboard Global (Supabase — opsional)
+### 2. Skor ke Spreadsheet Kelas (Google Apps Script)
+
+Skor akhir tiap mahasiswa bisa dicatat otomatis ke Google Spreadsheet:
+
+1. Buat spreadsheet tujuan skor
+2. **Extensions → Apps Script**, ganti isi `Code.gs` dengan file `sheets/submit_score.gs`, simpan
+3. **Deploy → New deployment → Web app** (Execute as: Me, Access: Anyone)
+4. Salin URL `…/exec` ke `.env`:
+
+```
+VITE_SCORE_SHEET_URL=https://script.google.com/macros/s/…/exec
+```
+
+Kalau nama yang sama main lebih dari satu kali, barisnya diupdate — **skor akhir yang menang**, bukan akumulasi.
+
+### 3. Leaderboard Global (Supabase — opsional)
 
 1. Buat project gratis di [supabase.com](https://supabase.com)
 2. Buka **SQL Editor**, jalankan isi `supabase/leaderboard.sql`

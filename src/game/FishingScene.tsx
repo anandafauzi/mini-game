@@ -23,6 +23,11 @@ type FishingState = 'idle' | 'casting' | 'waiting' | 'approaching' | 'bite' | 'r
 const BOBBER_REST: [number, number, number] = [0.2, 0, -7]
 const CAST_TARGET: [number, number, number] = [0.6, 0, -10.5]
 
+// Scratch vectors for the camera-relative first-person rig anchor.
+const _fwd = new THREE.Vector3()
+const _right = new THREE.Vector3()
+const _down = new THREE.Vector3()
+
 /**
  * Bobber that floats on the animated sea surface.
  *
@@ -127,6 +132,7 @@ export function FishingScene() {
   const escapeTimer = useRef<number | null>(null)
   const { camera } = useThree()
   const fpRig = useRef<THREE.Group>(null)
+  const reelBarRef = useRef<THREE.Group>(null)
   const rodTipRef = useRef<THREE.Object3D>(null)
   const boatRef = useRef<BoatRef>({ group: null, deckY: 0 })
   const bobberLiveRef = useRef(new THREE.Vector3(0, 0, -7))
@@ -422,9 +428,9 @@ export function FishingScene() {
     playerPos.current.z = THREE.MathUtils.clamp(playerPos.current.z, -0.8, 0.9)
 
     const deckY = boatRef.current.deckY
-    // very gentle boat-driven camera heave, kept subtle to avoid nausea
+    // minimal boat-driven heave, kept tiny to avoid motion sickness
     camBobT.current += delta
-    const heave = oceanHeight(0, 0, state.clock.elapsedTime) * 0.18 + Math.sin(camBobT.current * 0.9) * 0.012
+    const heave = oceanHeight(0, 0, state.clock.elapsedTime) * 0.06 + Math.sin(camBobT.current * 0.9) * 0.005
 
     const targetRotY = lookYaw.current
     const targetRotX = -0.14 + lookPitch.current
@@ -437,14 +443,32 @@ export function FishingScene() {
     const camZ = bz + playerPos.current.z
     camera.position.x = THREE.MathUtils.lerp(camera.position.x, camX, 0.15)
     camera.position.z = THREE.MathUtils.lerp(camera.position.z, camZ, 0.15)
-    camera.position.y = THREE.MathUtils.lerp(camera.position.y, deckY + 1.35 + heave * 0.25, 0.06)
-    // very subtle roll following the boat
-    camera.rotation.z = THREE.MathUtils.lerp(camera.rotation.z, (boatRef.current.group?.rotation.z ?? 0) * 0.12, 0.04)
+    camera.position.y = THREE.MathUtils.lerp(camera.position.y, deckY + 1.35 + heave * 0.25, 0.05)
+    // barely-there roll following the boat
+    camera.rotation.z = THREE.MathUtils.lerp(camera.rotation.z, (boatRef.current.group?.rotation.z ?? 0) * 0.05, 0.03)
 
-    // make the rod rig follow the camera so the first-person framing is preserved
+    // Anchor the first-person rod rig to the camera frustum so the rod stays
+    // visible on both wide desktop and narrow portrait phone screens.
     if (fpRig.current) {
-      fpRig.current.position.copy(camera.position)
-      fpRig.current.quaternion.copy(camera.quaternion)
+      const cam = camera as THREE.PerspectiveCamera
+      _fwd.set(0, 0, -1).applyQuaternion(cam.quaternion)
+      _right.set(1, 0, 0).applyQuaternion(cam.quaternion)
+      _down.set(0, -1, 0).applyQuaternion(cam.quaternion)
+      // lateral offset sized relative to the frustum half-width at rig depth
+      const halfAtRef = Math.tan((cam.fov * Math.PI) / 360) * cam.aspect * 0.42
+      const lat = THREE.MathUtils.clamp(halfAtRef * 0.45, 0.1, 0.3)
+      fpRig.current.position
+        .copy(cam.position)
+        .addScaledVector(_right, lat)
+        .addScaledVector(_down, 0.3)
+        .addScaledVector(_fwd, 0.42)
+      fpRig.current.quaternion.copy(cam.quaternion)
+
+      // scale the reel bar so it never overflows narrow portrait screens
+      if (reelBarRef.current) {
+        const halfAtBar = Math.tan((cam.fov * Math.PI) / 360) * cam.aspect * 1.82
+        reelBarRef.current.scale.setScalar(Math.min(1, halfAtBar / 0.85))
+      }
     }
   })
 
@@ -478,18 +502,21 @@ export function FishingScene() {
       <group ref={fpRig}>
         <FishingRod castProgress={castProgress} tension={tension} tipRef={rodTipRef} />
         {state === 'reeling' && (
-          <group position={[0, 0.15, -1.6]}>
+          <group ref={reelBarRef} position={[0, 0.12, -1.4]}>
+            {/* track: light blue so it reads clearly against sea & sky */}
             <mesh>
               <planeGeometry args={[1.6, 0.18]} />
-              <meshBasicMaterial color="#38bdf8" transparent opacity={0.35} depthTest={false} />
+              <meshBasicMaterial color="#7dd3fc" transparent opacity={0.85} depthTest={false} />
             </mesh>
+            {/* green bonus zone */}
             <mesh position={[0, 0, 0.01]}>
               <planeGeometry args={[0.28 - (activeFish?.reelDifficulty ?? 0.3) * 0.12, 0.18]} />
-              <meshBasicMaterial color="#22c55e" depthTest={false} />
+              <meshBasicMaterial color="#22c55e" transparent opacity={0.95} depthTest={false} />
             </mesh>
+            {/* moving marker: bright white on blue/green */}
             <mesh position={[(reelProgress - 0.5) * 1.6, 0, 0.02]}>
-              <planeGeometry args={[0.06, 0.22]} />
-              <meshBasicMaterial color="#e0f2fe" depthTest={false} />
+              <planeGeometry args={[0.07, 0.22]} />
+              <meshBasicMaterial color="#ffffff" depthTest={false} />
             </mesh>
           </group>
         )}
