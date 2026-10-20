@@ -5,6 +5,7 @@ import { RARITY_COLOR, RARITY_LABEL } from '../lib/fish'
 export function QuizOverlay() {
   const phase = useGame((s) => s.phase)
   const caughtFish = useGame((s) => s.caughtFish)
+  const caughtFishInfo = useGame((s) => s.caughtFishInfo)
   const questions = useGame((s) => s.questions)
   const questionIndex = useGame((s) => s.questionIndex)
   const answerQuiz = useGame((s) => s.answerQuiz)
@@ -25,7 +26,7 @@ export function QuizOverlay() {
       const t = window.setTimeout(() => {
         setShowCatch(false)
         proceedToQuiz()
-      }, 1800)
+      }, 2600)
       return () => window.clearTimeout(t)
     }
     if (phase === 'quiz') {
@@ -68,7 +69,14 @@ export function QuizOverlay() {
             className="mt-1 inline-block rounded-full px-3 py-0.5 text-sm font-bold"
             style={{ backgroundColor: RARITY_COLOR[caughtFish.rarity] }}
           >
-            {RARITY_LABEL[caughtFish.rarity]} +{caughtFish.bonus} poin
+            {RARITY_LABEL[caughtFish.rarity]} +{caughtFishInfo?.bonus ?? caughtFish.bonus} poin
+          </div>
+          <div className="mt-2 text-xs font-semibold">
+            {caughtFishInfo?.inGreen ? (
+              <span className="text-emerald-300">Tepat di zona hijau! Ikan besar 🎣</span>
+            ) : (
+              <span className="text-sky-200">Dapat ikan! Tarik pas zona hijau untuk ikan lebih besar</span>
+            )}
           </div>
         </div>
       </div>

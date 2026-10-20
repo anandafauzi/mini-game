@@ -48,7 +48,7 @@ export function FishingControls() {
       : state === 'bite'
         ? '❗ TARIK SEKARANG!'
         : state === 'reeling'
-          ? '⬇️ Tarik di Zona Hijau'
+          ? '🎣 Tarik Sekarang! Zona hijau = ikan besar'
           : state === 'casting' || state === 'waiting' || state === 'approaching'
             ? 'Menunggu ikan...'
             : '...'

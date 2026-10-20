@@ -93,24 +93,29 @@ function Bird({
       ref.current.position.z = -20 + Math.sin(t) * radius * 0.6
       ref.current.position.y = height + Math.sin(t * 2) * 0.4
       ref.current.rotation.y = -t + Math.PI / 2
+      ref.current.rotation.z = Math.cos(t) * 0.25
     }
-    const flap = Math.sin(clock.elapsedTime * 8 + offset) * 0.6
+    const flap = Math.sin(clock.elapsedTime * 8 + offset) * 0.7
     if (wingL.current) wingL.current.rotation.z = flap
     if (wingR.current) wingR.current.rotation.z = -flap
   })
 
   return (
     <group ref={ref}>
-      <mesh>
-        <sphereGeometry args={[0.08, 6, 6]} />
-        <meshStandardMaterial color="#333333" />
+      <mesh scale={[1, 0.7, 1.6]}>
+        <sphereGeometry args={[0.09, 8, 6]} />
+        <meshStandardMaterial color="#333333" roughness={0.8} />
       </mesh>
-      <mesh ref={wingL} position={[-0.12, 0, 0]}>
-        <planeGeometry args={[0.28, 0.1]} />
+      <mesh position={[0, 0, 0.16]} rotation={[Math.PI / 2, 0, 0]}>
+        <coneGeometry args={[0.03, 0.12, 6]} />
+        <meshStandardMaterial color="#222222" />
+      </mesh>
+      <mesh ref={wingL} position={[-0.14, 0, 0]} rotation={[0, 0, 0]}>
+        <planeGeometry args={[0.32, 0.12]} />
         <meshStandardMaterial color="#444444" side={THREE.DoubleSide} />
       </mesh>
-      <mesh ref={wingR} position={[0.12, 0, 0]}>
-        <planeGeometry args={[0.28, 0.1]} />
+      <mesh ref={wingR} position={[0.14, 0, 0]} rotation={[0, 0, 0]}>
+        <planeGeometry args={[0.32, 0.12]} />
         <meshStandardMaterial color="#444444" side={THREE.DoubleSide} />
       </mesh>
     </group>

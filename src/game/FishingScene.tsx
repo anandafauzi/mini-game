@@ -22,6 +22,7 @@ export function FishingScene() {
   const onFishCaught = useGame((s) => s.onFishCaught)
   const onFishEscaped = useGame((s) => s.onFishEscaped)
   const consumeReelAttempt = useGame((s) => s.consumeReelAttempt)
+  const caughtFishInfo = useGame((s) => s.caughtFishInfo)
 
   const [state, setState] = useState<FishingState>('idle')
   const [castProgress, setCastProgress] = useState<number | null>(null)
@@ -68,20 +69,19 @@ export function FishingScene() {
   }, [state])
 
   useEffect(() => {
-    if (phase !== 'fishing') {
-      setState('idle')
-      setCastProgress(null)
-      setBobberPos(null)
-      setActiveFish(null)
-      setBobberDip(0)
-      setTension(0)
-      setBiteFlash(0)
-      if (escapeTimer.current) window.clearTimeout(escapeTimer.current)
-    }
+    if (phase === 'fishing' || phase === 'catch') return
+    setState('idle')
+    setCastProgress(null)
+    setBobberPos(null)
+    setActiveFish(null)
+    setBobberDip(0)
+    setTension(0)
+    setBiteFlash(0)
+    if (escapeTimer.current) window.clearTimeout(escapeTimer.current)
   }, [phase])
 
   useFrame((_, delta) => {
-    if (phase !== 'fishing') return
+    if (phase !== 'fishing' && phase !== 'catch') return
 
     if (state === 'casting' && castProgress !== null) {
       const next = Math.min(1, castProgress + delta * 1.4)
@@ -145,7 +145,7 @@ export function FishingScene() {
     if (state === 'reeling') {
       if (escapeTimer.current) window.clearTimeout(escapeTimer.current)
       const diff = activeFish?.reelDifficulty ?? 0.3
-      const speed = 1.6 + diff * 2.2
+      const speed = 0.7 + diff * 0.9
       reelValueRef.current += reelDirRef.current * delta * speed
       if (reelValueRef.current >= 1) {
         reelValueRef.current = 1
@@ -173,6 +173,16 @@ export function FishingScene() {
         THREE.MathUtils.lerp(p[2], -9, delta * 2),
       ])
     }
+
+    if (state === 'caught') {
+      setBobberDip(0)
+      setTension(0)
+      setFishPos((p) => [
+        THREE.MathUtils.lerp(p[0], 0.35, delta * 3),
+        THREE.MathUtils.lerp(p[1], 1.35 + Math.sin(performance.now() * 0.004) * 0.06, delta * 3),
+        THREE.MathUtils.lerp(p[2], -2.1, delta * 3),
+      ])
+    }
   })
 
   useEffect(() => {
@@ -196,19 +206,17 @@ export function FishingScene() {
   const handleReelClick = useCallback(() => {
     if (state !== 'reeling' || !activeFish) return
     const zoneSize = 0.28 - (activeFish.reelDifficulty ?? 0.3) * 0.12
-    const success = reelValueRef.current >= 0.5 - zoneSize / 2 && reelValueRef.current <= 0.5 + zoneSize / 2
-    if (success) {
-      playCatchSound()
-      setState('caught')
-      setTension(0)
-      onFishCaught(activeFish)
-    } else {
-      playSplashSound()
-      consumeReelAttempt()
-      setState('escaped')
-      setTension(0)
-    }
-  }, [state, activeFish, onFishCaught, consumeReelAttempt])
+    const inGreen =
+      reelValueRef.current >= 0.5 - zoneSize / 2 &&
+      reelValueRef.current <= 0.5 + zoneSize / 2
+    const distFromCenter = Math.abs(reelValueRef.current - 0.5)
+    const accuracy = Math.max(0, 1 - distFromCenter / 0.5)
+    const sizeScale = inGreen ? 1 + 0.35 * accuracy : 0.55 + 0.25 * accuracy
+    playCatchSound()
+    setState('caught')
+    setTension(0)
+    onFishCaught(activeFish, { inGreen, sizeScale, accuracy })
+  }, [state, activeFish, onFishCaught])
 
   const handleAction = useCallback(() => {
     if (state === 'idle') startCast()
@@ -273,7 +281,9 @@ export function FishingScene() {
     camera.position.y = THREE.MathUtils.lerp(camera.position.y, 1.6 + Math.sin(performance.now() * 0.0005) * 0.03, 0.05)
   })
 
-  const fishVisible = state === 'waiting' || state === 'approaching' || state === 'bite' || state === 'reeling' || state === 'escaped'
+  const fishVisible = state === 'waiting' || state === 'approaching' || state === 'bite' || state === 'reeling' || state === 'escaped' || state === 'caught'
+  const displaySpecies = state === 'caught' ? caughtFishInfo?.fish ?? activeFish : activeFish
+  const displayScale = state === 'caught' ? caughtFishInfo?.sizeScale ?? 1 : 1
 
   return (
     <>
@@ -301,12 +311,13 @@ export function FishingScene() {
       <FishingRod castProgress={castProgress} tension={tension} bobberPos={bobberPos} />
       {bobberPos && <Bobber position={bobberPos} dip={bobberDip} />}
 
-      {activeFish && (
+      {displaySpecies && (
         <Fish
-          species={activeFish}
+          species={displaySpecies}
           position={fishPos}
           visible={fishVisible}
-          speed={state === 'reeling' ? 3 : 1.2}
+          speed={state === 'reeling' || state === 'caught' ? 3 : 1.2}
+          scaleMultiplier={displayScale}
         />
       )}
 

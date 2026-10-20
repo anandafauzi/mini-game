@@ -8,9 +8,9 @@ export function Water() {
   const uniforms = useMemo(
     () => ({
       uTime: { value: 0 },
-      uColorDeep: { value: new THREE.Color('#12556b') },
-      uColorShallow: { value: new THREE.Color('#4fb8c9') },
-      uColorSky: { value: new THREE.Color('#bfe3f0') },
+      uColorDeep: { value: new THREE.Color('#1673b8') },
+      uColorShallow: { value: new THREE.Color('#5cc6e6') },
+      uColorSky: { value: new THREE.Color('#cdeafc') },
       uCameraPos: { value: new THREE.Vector3(0, 1.6, 3) },
     }),
     [],
@@ -63,14 +63,14 @@ export function Water() {
       float depthMix = clamp(vUv.y + vWave * 3.0, 0.0, 1.0);
       vec3 base = mix(uColorShallow, uColorDeep, depthMix);
 
-      vec3 color = mix(base, uColorSky, fresnel * 0.65);
+      vec3 color = mix(base, uColorSky, fresnel * 0.5);
       color += vec3(0.35) * pow(shimmer, 3.0) * 0.5;
       color += vec3(0.15) * pow(ripple, 6.0);
 
       float spec = pow(max(0.0, sin(shimmer * 3.14159 + uTime)), 12.0);
       color += vec3(1.0, 0.98, 0.9) * spec * 0.25;
 
-      gl_FragColor = vec4(color, 0.94);
+      gl_FragColor = vec4(color, 0.82);
     }
   `
 

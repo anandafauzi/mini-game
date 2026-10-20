@@ -10,9 +10,10 @@ interface FishProps {
   speed?: number
   visible?: boolean
   onArrive?: () => void
+  scaleMultiplier?: number
 }
 
-export function Fish({ species, position, target, speed = 1.5, visible = true, onArrive }: FishProps) {
+export function Fish({ species, position, target, speed = 1.5, visible = true, onArrive, scaleMultiplier = 1 }: FishProps) {
   const groupRef = useRef<THREE.Group>(null)
   const tailRef = useRef<THREE.Mesh>(null)
   const t = useRef(0)
@@ -38,7 +39,7 @@ export function Fish({ species, position, target, speed = 1.5, visible = true, o
   const s = species.size
 
   return (
-    <group ref={groupRef} position={position} scale={s}>
+    <group ref={groupRef} position={position} scale={s * scaleMultiplier}>
       <mesh castShadow>
         <sphereGeometry args={[0.5, 12, 8]} />
         <meshStandardMaterial color={species.color} />

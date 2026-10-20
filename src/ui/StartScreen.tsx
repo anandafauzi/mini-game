@@ -58,7 +58,7 @@ export function StartScreen() {
         </button>
 
         <div className="mt-4 text-xs text-gray-500 leading-relaxed">
-          <p><b>Cara main:</b> Klik / tap untuk melempar kail → saat ikan menyambar, klik lagi untuk mengait → tarik saat marker di zona hijau → jawab kuisnya!</p>
+          <p><b>Cara main:</b> Klik / tap untuk melempar kail → saat ikan menyambar, klik lagi untuk mengait → klik untuk menarik ikan. Tarik tepat di <b>zona hijau</b> untuk mendapatkan ikan lebih besar & poin bonus, lalu jawab kuisnya!</p>
         </div>
       </div>
     </div>
