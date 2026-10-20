@@ -1,13 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { useFrame, useThree } from '@react-three/fiber'
+import { useFrame, useThree, useThree as useR3F } from '@react-three/fiber'
 import { Sky } from '@react-three/drei'
 import * as THREE from 'three'
 import { Environment } from './Environment'
 import { Water } from './Water'
 import { Fish } from './Fish'
 import { Bobber, FishingRod } from './FishingRod'
+import { Clouds, Birds } from './Sky'
 import { pickRandomSpecies, type FishSpecies } from '../lib/fish'
 import { useGame } from '../lib/gameState'
+import { playCastSound, playCatchSound, playSplashSound, playAlertSound } from '../lib/audio'
+import { emitFishingState } from '../lib/useFishingAction'
 
 type FishingState = 'idle' | 'casting' | 'waiting' | 'approaching' | 'bite' | 'reeling' | 'caught' | 'escaped'
 
@@ -18,6 +21,7 @@ export function FishingScene() {
   const phase = useGame((s) => s.phase)
   const onFishCaught = useGame((s) => s.onFishCaught)
   const onFishEscaped = useGame((s) => s.onFishEscaped)
+  const consumeReelAttempt = useGame((s) => s.consumeReelAttempt)
 
   const [state, setState] = useState<FishingState>('idle')
   const [castProgress, setCastProgress] = useState<number | null>(null)
@@ -27,14 +31,27 @@ export function FishingScene() {
   const [fishPos, setFishPos] = useState<[number, number, number]>([2, -0.4, -7])
   const [tension, setTension] = useState(0)
   const [reelProgress, setReelProgress] = useState(0)
+  const [biteFlash, setBiteFlash] = useState(0)
+
+  useEffect(() => {
+    emitFishingState(state)
+  }, [state])
 
   const reelValueRef = useRef(0)
   const reelDirRef = useRef(1)
   const escapeTimer = useRef<number | null>(null)
-  const { size } = useThree()
+  const { camera } = useThree()
+  const { gl } = useR3F()
+
+  // Camera look-around state
+  const lookYaw = useRef(0)
+  const lookPitch = useRef(0)
+  const dragging = useRef(false)
+  const lastPointer = useRef({ x: 0, y: 0 })
 
   const startCast = useCallback(() => {
     if (state !== 'idle' || phase !== 'fishing') return
+    playCastSound()
     setState('casting')
     setCastProgress(0)
     setBobberPos([CAST_TARGET[0], CAST_TARGET[1] + 3, CAST_TARGET[2]])
@@ -43,6 +60,7 @@ export function FishingScene() {
 
   const hookFish = useCallback(() => {
     if (state !== 'bite') return
+    playSplashSound()
     setState('reeling')
     setReelProgress(0)
     reelValueRef.current = 0
@@ -57,6 +75,7 @@ export function FishingScene() {
       setActiveFish(null)
       setBobberDip(0)
       setTension(0)
+      setBiteFlash(0)
       if (escapeTimer.current) window.clearTimeout(escapeTimer.current)
     }
   }, [phase])
@@ -73,15 +92,13 @@ export function FishingScene() {
         THREE.MathUtils.lerp(1, CAST_TARGET[2], next),
       ])
       if (next >= 1) {
+        playSplashSound()
         setState('waiting')
         setBobberPos(BOBBER_REST)
         if (escapeTimer.current) window.clearTimeout(escapeTimer.current)
         const delay = 1500 + Math.random() * 3500
         escapeTimer.current = window.setTimeout(() => {
-          setState((prev) => {
-            if (prev !== 'waiting') return prev
-            return 'approaching'
-          })
+          setState((prev) => (prev !== 'waiting' ? prev : 'approaching'))
         }, delay)
       }
     }
@@ -104,6 +121,7 @@ export function FishingScene() {
         THREE.MathUtils.lerp(p[2], CAST_TARGET[2], delta * 2),
       ])
       if (Math.abs(fishPos[0] - CAST_TARGET[0]) < 0.15 && Math.abs(fishPos[2] - CAST_TARGET[2]) < 0.3) {
+        playAlertSound()
         setState('bite')
         setBobberDip(0.12)
         setTension(1)
@@ -111,15 +129,17 @@ export function FishingScene() {
         escapeTimer.current = window.setTimeout(() => {
           setState((prev) => {
             if (prev !== 'bite') return prev
+            consumeReelAttempt()
             return 'escaped'
           })
-        }, 1600)
+        }, 2000)
       }
     }
 
     if (state === 'bite') {
       const jitter = Math.sin(performance.now() * 0.03) * 0.04
       setBobberDip(0.12 + jitter)
+      setBiteFlash((f) => (f + delta * 4) % (Math.PI * 2))
     }
 
     if (state === 'reeling') {
@@ -158,7 +178,17 @@ export function FishingScene() {
   useEffect(() => {
     if (state !== 'escaped') return
     const t = window.setTimeout(() => {
-      onFishEscaped()
+      const remaining = useGame.getState().reelAttemptsLeft
+      if (remaining > 0) {
+        setState('idle')
+        setCastProgress(null)
+        setBobberPos(null)
+        setActiveFish(null)
+        setBobberDip(0)
+        setTension(0)
+      } else {
+        onFishEscaped()
+      }
     }, 900)
     return () => window.clearTimeout(t)
   }, [state, onFishEscaped])
@@ -168,52 +198,103 @@ export function FishingScene() {
     const zoneSize = 0.28 - (activeFish.reelDifficulty ?? 0.3) * 0.12
     const success = reelValueRef.current >= 0.5 - zoneSize / 2 && reelValueRef.current <= 0.5 + zoneSize / 2
     if (success) {
+      playCatchSound()
       setState('caught')
       setTension(0)
       onFishCaught(activeFish)
     } else {
+      playSplashSound()
+      consumeReelAttempt()
       setState('escaped')
       setTension(0)
     }
-  }, [state, activeFish, onFishCaught])
+  }, [state, activeFish, onFishCaught, consumeReelAttempt])
 
-  const handleClick = useCallback(() => {
+  const handleAction = useCallback(() => {
     if (state === 'idle') startCast()
     else if (state === 'bite') hookFish()
     else if (state === 'reeling') handleReelClick()
   }, [state, startCast, hookFish, handleReelClick])
 
+  // Expose action to UI button
+  useEffect(() => {
+    const handler = () => handleAction()
+    window.addEventListener('fishing-action', handler)
+    return () => window.removeEventListener('fishing-action', handler)
+  }, [handleAction])
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.code === 'Space') {
+      if (e.code === 'Space' || e.code === 'Enter') {
         e.preventDefault()
-        handleClick()
+        handleAction()
       }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [handleClick])
+  }, [handleAction])
 
+  // Camera look-around (drag to rotate view)
   useEffect(() => {
-    const onClick = (e: MouseEvent) => {
-      const t = e.target as HTMLElement
-      if (t.closest('[data-ui]')) return
-      handleClick()
+    const canvas = gl.domElement
+    const onPointerDown = (e: PointerEvent) => {
+      const target = e.target as HTMLElement
+      if (target.closest('[data-ui]')) return
+      dragging.current = true
+      lastPointer.current = { x: e.clientX, y: e.clientY }
     }
-    window.addEventListener('click', onClick)
-    return () => window.removeEventListener('click', onClick)
-  }, [handleClick])
+    const onPointerMove = (e: PointerEvent) => {
+      if (!dragging.current) return
+      const dx = e.clientX - lastPointer.current.x
+      const dy = e.clientY - lastPointer.current.y
+      lastPointer.current = { x: e.clientX, y: e.clientY }
+      lookYaw.current = THREE.MathUtils.clamp(lookYaw.current - dx * 0.004, -1.1, 1.1)
+      lookPitch.current = THREE.MathUtils.clamp(lookPitch.current - dy * 0.003, -0.5, 0.6)
+    }
+    const onPointerUp = () => {
+      dragging.current = false
+    }
+    canvas.addEventListener('pointerdown', onPointerDown)
+    window.addEventListener('pointermove', onPointerMove)
+    window.addEventListener('pointerup', onPointerUp)
+    return () => {
+      canvas.removeEventListener('pointerdown', onPointerDown)
+      window.removeEventListener('pointermove', onPointerMove)
+      window.removeEventListener('pointerup', onPointerUp)
+    }
+  }, [gl])
+
+  useFrame(() => {
+    // Smoothly move camera according to drag look-around
+    const targetRotY = lookYaw.current
+    const targetRotX = -0.12 + lookPitch.current
+    camera.rotation.y = THREE.MathUtils.lerp(camera.rotation.y, targetRotY, 0.1)
+    camera.rotation.x = THREE.MathUtils.lerp(camera.rotation.x, targetRotX, 0.1)
+    camera.position.y = THREE.MathUtils.lerp(camera.position.y, 1.6 + Math.sin(performance.now() * 0.0005) * 0.03, 0.05)
+  })
 
   const fishVisible = state === 'waiting' || state === 'approaching' || state === 'bite' || state === 'reeling' || state === 'escaped'
 
   return (
     <>
-      <ambientLight intensity={0.55} />
-      <directionalLight position={[8, 12, 5]} intensity={1.2} castShadow shadow-mapSize={[1024, 1024]} />
-      <hemisphereLight args={['#87ceeb', '#3f7d3a', 0.4]} />
-      <Sky sunPosition={[10, 8, -20]} turbidity={6} rayleigh={1.2} />
-      <fog attach="fog" args={['#c5dfc5', 18, 55]} />
+      <ambientLight intensity={0.6} />
+      <directionalLight
+        position={[10, 16, 8]}
+        intensity={1.6}
+        castShadow
+        shadow-mapSize={[2048, 2048]}
+        shadow-camera-left={-20}
+        shadow-camera-right={20}
+        shadow-camera-top={20}
+        shadow-camera-bottom={-20}
+        color="#fff4e6"
+      />
+      <hemisphereLight args={['#bfe3f0', '#4f7a3a', 0.55]} />
+      <Sky sunPosition={[10, 8, -20]} turbidity={5} rayleigh={1.0} mieCoefficient={0.008} mieDirectionalG={0.85} />
+      <fog attach="fog" args={['#cfe6ef', 24, 70]} />
 
+      <Clouds />
+      <Birds />
       <Environment />
       <Water />
 
@@ -246,10 +327,12 @@ export function FishingScene() {
         </group>
       )}
 
-      <mesh position={[0, -0.5, 2]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-        <planeGeometry args={[size.width, 8]} />
-        <meshStandardMaterial color="#6b5637" visible={false} />
-      </mesh>
+      {state === 'bite' && (
+        <mesh position={[CAST_TARGET[0], 0.9, CAST_TARGET[2]]}>
+          <ringGeometry args={[0.35 + Math.sin(biteFlash) * 0.05, 0.45 + Math.sin(biteFlash) * 0.05, 32]} />
+          <meshBasicMaterial color="#fbbf24" transparent opacity={0.85} side={THREE.DoubleSide} />
+        </mesh>
+      )}
     </>
   )
 }

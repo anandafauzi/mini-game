@@ -6,7 +6,7 @@ import { loadQuestions } from './lib/questions'
 import { StartScreen } from './ui/StartScreen'
 import { QuizOverlay } from './ui/QuizOverlay'
 import { LeaderboardWidget } from './ui/Leaderboard'
-import { Hud, FishingHint } from './ui/Hud'
+import { Hud, FishingControls } from './ui/Hud'
 import { ResultScreen } from './ui/ResultScreen'
 
 const DEFAULT_QUESTIONS_CSV_URL =
@@ -58,7 +58,7 @@ export default function App() {
       </div>
 
       <Hud />
-      <FishingHint />
+      <FishingControls />
       <LeaderboardWidget />
       <QuizOverlay />
       <ResultScreen />

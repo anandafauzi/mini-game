@@ -26,6 +26,7 @@ interface GameState {
   quizStartedAt: number
   totalPlayTimeMs: number
   gameStartedAt: number
+  reelAttemptsLeft: number
 
   setPlayerName: (name: string) => void
   setQuestions: (questions: Question[]) => void
@@ -33,12 +34,13 @@ interface GameState {
   onFishCaught: (fish: FishSpecies) => void
   proceedToQuiz: () => void
   onFishEscaped: () => void
+  consumeReelAttempt: () => void
   answerQuiz: (choice: 'a' | 'b' | 'c' | 'd' | null) => void
   finishGame: () => void
   backToMenu: () => void
 }
 
-const QUESTION_TIME_LIMIT_MS = 30000
+const QUESTION_TIME_LIMIT_MS = 120000
 const SPEED_BONUS_MAX = 20
 
 export function speedBonus(timeMs: number): number {
@@ -47,6 +49,7 @@ export function speedBonus(timeMs: number): number {
 }
 
 export const QUESTION_TIME_LIMIT = QUESTION_TIME_LIMIT_MS
+export const MAX_REEL_ATTEMPTS = 3
 
 export const useGame = create<GameState>((set, get) => ({
   phase: 'menu',
@@ -60,6 +63,7 @@ export const useGame = create<GameState>((set, get) => ({
   quizStartedAt: 0,
   totalPlayTimeMs: 0,
   gameStartedAt: 0,
+  reelAttemptsLeft: MAX_REEL_ATTEMPTS,
 
   setPlayerName: (name) => set({ playerName: name }),
   setQuestions: (questions) => set({ questions }),
@@ -74,6 +78,7 @@ export const useGame = create<GameState>((set, get) => ({
       lastPoints: 0,
       gameStartedAt: Date.now(),
       totalPlayTimeMs: 0,
+      reelAttemptsLeft: MAX_REEL_ATTEMPTS,
     }),
 
   onFishCaught: (fish) =>
@@ -106,10 +111,13 @@ export const useGame = create<GameState>((set, get) => ({
       results: [...results],
       caughtFish: null,
       questionIndex: next,
+      reelAttemptsLeft: MAX_REEL_ATTEMPTS,
       phase: next >= questions.length ? 'result' : 'fishing',
       totalPlayTimeMs: Date.now() - get().gameStartedAt,
     })
   },
+
+  consumeReelAttempt: () => set({ reelAttemptsLeft: Math.max(0, get().reelAttemptsLeft - 1) }),
 
   answerQuiz: (choice) => {
     const { questions, questionIndex, results, score, caughtFish, quizStartedAt } = get()

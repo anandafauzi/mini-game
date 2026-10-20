@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useGame } from '../lib/gameState'
+import { startAmbient } from '../lib/audio'
 
 export function StartScreen() {
   const playerName = useGame((s) => s.playerName)
@@ -11,6 +12,7 @@ export function StartScreen() {
   const canStart = name.trim().length >= 2 && questions.length > 0
 
   const handleStart = () => {
+    startAmbient()
     setPlayerName(name.trim())
     startGame()
   }
