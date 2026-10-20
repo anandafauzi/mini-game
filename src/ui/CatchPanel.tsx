@@ -7,9 +7,9 @@ export function CatchPanel() {
   const phase = useGame((s) => s.phase)
   const caughtFish = useGame((s) => s.caughtFish)
   const caughtFishInfo = useGame((s) => s.caughtFishInfo)
-  const proceed = useGame((s) => s.returnToFishing)
+  const questions = useGame((s) => s.questions)
+  const proceedToQuiz = useGame((s) => s.proceedToQuiz)
   const addCatch = useProgress((s) => s.addCatch)
-  const sellCatch = useProgress((s) => s.sellCatch)
 
   // roll weight/value once per catch
   const rolled = useMemo(
@@ -30,17 +30,12 @@ export function CatchPanel() {
     caughtAt: Date.now(),
   })
 
-  const handleSave = () => {
-    addCatch(buildRecord())
-    proceed()
-  }
+  const nextQuestion = () =>
+    questions.length > 0 ? questions[Math.floor(Math.random() * questions.length)] : null
 
-  const handleSell = () => {
-    const rec = buildRecord()
-    addCatch(rec)
-    // addCatch prepends; sell it immediately to grant money
-    sellCatch(rec.id)
-    proceed()
+  const handleOpenQuiz = () => {
+    addCatch(buildRecord())
+    proceedToQuiz(nextQuestion())
   }
 
   const green = caughtFishInfo?.inGreen
@@ -63,7 +58,7 @@ export function CatchPanel() {
             </div>
           )}
 
-          <div className="mt-4 grid grid-cols-3 gap-2 text-center">
+          <div className="mt-4 grid grid-cols-2 gap-2 text-center">
             <div className="rounded-xl bg-white/5 py-2">
               <div className="text-[10px] uppercase text-white/50">Berat</div>
               <div className="text-sm font-bold">{rolled.weight} kg</div>
@@ -72,26 +67,14 @@ export function CatchPanel() {
               <div className="text-[10px] uppercase text-white/50">Panjang</div>
               <div className="text-sm font-bold">{rolled.lengthCm} cm</div>
             </div>
-            <div className="rounded-xl bg-white/5 py-2">
-              <div className="text-[10px] uppercase text-white/50">Harga</div>
-              <div className="text-sm font-bold text-amber-300">
-                {rolled.value.toLocaleString('id-ID')}
-              </div>
-            </div>
           </div>
 
-          <div className="mt-5 flex gap-2">
+          <div className="mt-5">
             <button
-              onClick={handleSave}
-              className="flex-1 rounded-xl bg-sky-600 py-3 text-sm font-bold transition hover:bg-sky-700 active:scale-95"
+              onClick={handleOpenQuiz}
+              className="w-full rounded-xl bg-emerald-600 py-3 text-sm font-bold transition hover:bg-emerald-700 active:scale-95"
             >
-              Simpan ke Koleksi
-            </button>
-            <button
-              onClick={handleSell}
-              className="flex-1 rounded-xl bg-amber-500 py-3 text-sm font-bold text-slate-900 transition hover:bg-amber-400 active:scale-95"
-            >
-              Jual Rp
+              Buka Soal
             </button>
           </div>
         </div>

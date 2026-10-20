@@ -22,7 +22,7 @@ const QUESTIONS_CSV_URL =
 export default function App() {
   const phase = useGame((s) => s.phase)
   const setQuestions = useGame((s) => s.setQuestions)
-  const backToMenu = useGame((s) => s.backToMenu)
+  const finishGame = useGame((s) => s.finishGame)
   const setTimePaused = useTime((s) => s.setPaused)
   const [paused, setPaused] = useState(false)
   const [bagOpen, setBagOpen] = useState(false)
@@ -41,7 +41,7 @@ export default function App() {
     setPaused(false)
     setTimePaused(false)
     resumeAmbient()
-    backToMenu()
+    finishGame()
   }
 
   // ESC opens pause menu while fishing

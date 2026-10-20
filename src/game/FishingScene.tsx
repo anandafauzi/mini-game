@@ -238,14 +238,16 @@ export function FishingScene() {
     else if (state === 'reeling') handleReelClick()
   }, [state, startCast, hookFish, handleReelClick])
 
-  // Expose action to UI button
+  // Expose action to UI button (only while fishing)
   useEffect(() => {
+    if (phase !== 'fishing') return
     const handler = () => handleAction()
     window.addEventListener('fishing-action', handler)
     return () => window.removeEventListener('fishing-action', handler)
-  }, [handleAction])
+  }, [handleAction, phase])
 
   useEffect(() => {
+    if (phase !== 'fishing') return
     const onKey = (e: KeyboardEvent) => {
       if (e.code === 'Space' || e.code === 'Enter') {
         e.preventDefault()
@@ -254,7 +256,7 @@ export function FishingScene() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [handleAction])
+  }, [handleAction, phase])
 
   // Camera look-around: pointer-lock on desktop, drag on touch
   useEffect(() => {

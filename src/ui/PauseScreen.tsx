@@ -58,7 +58,7 @@ export function PauseScreen({
           onClick={onQuit}
           className="mt-2 w-full rounded-xl bg-white/10 py-3 text-sm font-bold transition hover:bg-white/20 active:scale-95"
         >
-          Keluar ke Menu
+          Akhiri Sesi &amp; Lihat Skor
         </button>
       </div>
     </div>

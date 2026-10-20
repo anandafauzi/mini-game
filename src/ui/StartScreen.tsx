@@ -42,7 +42,13 @@ export function StartScreen() {
             value={name}
             maxLength={24}
             onChange={(e) => setName(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && canStart && handleStart()}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && canStart) {
+                e.preventDefault()
+                e.stopPropagation()
+                handleStart()
+              }
+            }}
             placeholder="Masukkan namamu..."
             className="w-full rounded-lg border-2 border-emerald-300 px-4 py-3 text-lg outline-none focus:border-emerald-500"
             autoFocus

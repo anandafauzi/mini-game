@@ -36,7 +36,9 @@ interface GameState {
   results: QuizResult[]
   caughtFish: FishSpecies | null
   caughtFishInfo: CaughtFishState | null
+  quizQuestion: Question | null
   lastPoints: number
+  lastQuizCorrect: boolean
   quizStartedAt: number
   totalPlayTimeMs: number
   gameStartedAt: number
@@ -47,7 +49,7 @@ interface GameState {
   setQuestions: (questions: Question[]) => void
   startGame: () => void
   onFishCaught: (fish: FishSpecies, info: CatchInfo) => void
-  proceedToQuiz: () => void
+  proceedToQuiz: (question: Question | null) => void
   returnToFishing: () => void
   onFishEscaped: () => void
   consumeReelAttempt: () => void
@@ -76,7 +78,9 @@ export const useGame = create<GameState>((set, get) => ({
   results: [],
   caughtFish: null,
   caughtFishInfo: null,
+  quizQuestion: null,
   lastPoints: 0,
+  lastQuizCorrect: false,
   quizStartedAt: 0,
   totalPlayTimeMs: 0,
   gameStartedAt: 0,
@@ -94,7 +98,9 @@ export const useGame = create<GameState>((set, get) => ({
       results: [],
       caughtFish: null,
       caughtFishInfo: null,
+      quizQuestion: null,
       lastPoints: 0,
+      lastQuizCorrect: false,
       gameStartedAt: Date.now(),
       totalPlayTimeMs: 0,
       reelAttemptsLeft: MAX_REEL_ATTEMPTS,
@@ -115,9 +121,10 @@ export const useGame = create<GameState>((set, get) => ({
       quizStartedAt: 0,
     })),
 
-  proceedToQuiz: () =>
+  proceedToQuiz: (question) =>
     set({
       phase: 'quiz',
+      quizQuestion: question,
       quizStartedAt: Date.now(),
     }),
 
@@ -126,63 +133,52 @@ export const useGame = create<GameState>((set, get) => ({
       phase: 'fishing',
       caughtFish: null,
       caughtFishInfo: null,
+      quizQuestion: null,
       reelAttemptsLeft: MAX_REEL_ATTEMPTS,
       gameStartedAt: s.gameStartedAt || Date.now(),
     })),
 
-  onFishEscaped: () => {
-    const { questions, questionIndex, results } = get()
-    const q = questions[questionIndex]
-    results.push({
-      questionId: q.id,
-      caught: false,
-      correct: false,
-      points: 0,
-      timeMs: 0,
-      fishName: null,
-      fishBonus: 0,
-    })
-    const next = questionIndex + 1
+  onFishEscaped: () =>
     set({
-      results: [...results],
       caughtFish: null,
-      questionIndex: next,
+      caughtFishInfo: null,
+      quizQuestion: null,
       reelAttemptsLeft: MAX_REEL_ATTEMPTS,
-      phase: next >= questions.length ? 'result' : 'fishing',
-      totalPlayTimeMs: Date.now() - get().gameStartedAt,
-    })
-  },
+      phase: 'fishing',
+    }),
 
   consumeReelAttempt: () => set({ reelAttemptsLeft: Math.max(0, get().reelAttemptsLeft - 1) }),
 
   answerQuiz: (choice) => {
-    const { questions, questionIndex, results, score, caughtFishInfo, quizStartedAt } = get()
-    const q = questions[questionIndex]
+    const { quizQuestion, quizStartedAt, score, results } = get()
+    if (!quizQuestion) {
+      set({ phase: 'fishing', quizQuestion: null })
+      return
+    }
     const timeMs = Date.now() - quizStartedAt
-    const correct = choice === q.correct
-    const fishBonus = caughtFishInfo?.bonus ?? 0
-    const points = correct ? q.value + speedBonus(timeMs) + fishBonus : 0
+    const correct = choice === quizQuestion.correct
+    const points = correct ? quizQuestion.value + speedBonus(timeMs) : 0
 
     results.push({
-      questionId: q.id,
+      questionId: quizQuestion.id,
       caught: true,
       correct,
       points,
       timeMs,
-      fishName: caughtFishInfo?.fish.name ?? null,
-      fishBonus,
+      fishName: null,
+      fishBonus: 0,
     })
 
-    const next = questionIndex + 1
     set({
       results: [...results],
       score: score + points,
       lastPoints: points,
+      lastQuizCorrect: correct,
+      quizQuestion: null,
+      phase: 'fishing',
       caughtFish: null,
       caughtFishInfo: null,
-      questionIndex: next,
-      phase: next >= questions.length ? 'result' : 'fishing',
-      totalPlayTimeMs: Date.now() - get().gameStartedAt,
+      reelAttemptsLeft: MAX_REEL_ATTEMPTS,
     })
   },
 
