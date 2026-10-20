@@ -60,7 +60,7 @@ export const QUALITY_LABEL: Record<Quality, string> = {
   high: 'Tinggi',
 }
 
-const STORAGE_KEY = 'sungai-lestari-quality-v1'
+const STORAGE_KEY = 'laut-nusantara-quality-v1'
 
 function detectDefault(): Quality {
   if (typeof navigator === 'undefined') return 'medium'

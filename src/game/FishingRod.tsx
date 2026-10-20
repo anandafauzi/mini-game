@@ -64,20 +64,20 @@ export function FishingRod({ castProgress, tension, tipRef }: FishingRodProps) {
 
   return (
     <group>
-      {/* First-person rig anchored lower-right, angled toward the river */}
-      <group ref={rodRef} position={[0.52, -0.42, -0.35]} rotation={[0.15, -0.12, 0]}>
-        {/* grip / handle */}
-        <mesh castShadow position={[0, -0.15, 0.25]} rotation={[Math.PI / 2.35, 0, 0]}>
-          <cylinderGeometry args={[0.03, 0.037, 0.7, 12]} />
+      {/* First-person rig anchored lower-right, angled toward the sea ahead (-z) */}
+      <group ref={rodRef} position={[0.5, -0.42, -0.5]} rotation={[0.15, -0.12, 0]}>
+        {/* grip / handle (nearest the player) */}
+        <mesh castShadow position={[0, -0.05, 0.24]} rotation={[Math.PI / 2, 0, 0]}>
+          <cylinderGeometry args={[0.03, 0.037, 0.6, 12]} />
           <meshStandardMaterial color="#2c2c30" roughness={0.6} />
         </mesh>
         {/* reel seat */}
-        <mesh position={[0, -0.05, 0.28]} rotation={[Math.PI / 2.35, 0, 0]}>
+        <mesh position={[0, 0.01, 0.06]} rotation={[Math.PI / 2, 0, 0]}>
           <cylinderGeometry args={[0.026, 0.026, 0.14, 12]} />
           <meshStandardMaterial color="#8a8f96" metalness={0.7} roughness={0.35} />
         </mesh>
-        {/* spinning reel body */}
-        <group ref={reelRef} position={[0, -0.42, 0.34]}>
+        {/* spinning reel body (hangs below the seat) */}
+        <group ref={reelRef} position={[0, -0.12, 0.02]}>
           <mesh castShadow rotation={[0, 0, 0]}>
             <cylinderGeometry args={[0.055, 0.055, 0.05, 16]} />
             <meshStandardMaterial color="#5b6068" metalness={0.6} roughness={0.4} />
@@ -87,32 +87,37 @@ export function FishingRod({ castProgress, tension, tipRef }: FishingRodProps) {
             <meshStandardMaterial color="#3d4148" metalness={0.6} roughness={0.4} />
           </mesh>
         </group>
-        {/* lower blank */}
-        <mesh castShadow position={[0, 0.1, 0.28]} rotation={[Math.PI / 2.35, 0, 0]}>
+        {/* lower blank (extends forward, -z) */}
+        <mesh castShadow position={[0, 0.06, -0.35]} rotation={[Math.PI / 2, 0, 0]}>
           <cylinderGeometry args={[0.02, 0.026, 0.9, 12]} />
           <meshStandardMaterial color="#5c4033" roughness={0.5} />
         </mesh>
-        {/* mid + tip blank (two-tone for depth) */}
-        <mesh castShadow position={[0, 0.42, 0.62]} rotation={[Math.PI / 2.35, 0, 0]}>
-          <cylinderGeometry args={[0.012, 0.019, 0.95, 12]} />
+        {/* mid blank (two-tone for depth) */}
+        <mesh castShadow position={[0, 0.16, -1.05]} rotation={[Math.PI / 2, 0, 0]}>
+          <cylinderGeometry args={[0.012, 0.019, 0.85, 12]} />
           <meshStandardMaterial color="#3f2c22" roughness={0.4} metalness={0.08} />
         </mesh>
-        <mesh castShadow position={[0, 0.72, 0.95]} rotation={[Math.PI / 2.35, 0, 0]}>
-          <cylinderGeometry args={[0.006, 0.011, 0.7, 10]} />
+        {/* tip blank */}
+        <mesh castShadow position={[0, 0.24, -1.7]} rotation={[Math.PI / 2, 0, 0]}>
+          <cylinderGeometry args={[0.006, 0.011, 0.65, 10]} />
           <meshStandardMaterial color="#2a1d16" roughness={0.35} metalness={0.1} />
         </mesh>
         {/* line guides */}
-        {[0.2, 0.5, 0.85].map((z, i) => (
-          <mesh key={i} position={[0, z * 0.55 - 0.02, z]} rotation={[Math.PI / 2.35, 0, 0]}>
+        {[
+          [0.08, -0.55],
+          [0.16, -1.2],
+          [0.24, -1.85],
+        ].map(([y, z], i) => (
+          <mesh key={i} position={[0, y, z]} rotation={[Math.PI / 2, 0, 0]}>
             <torusGeometry args={[0.03 - i * 0.004, 0.006, 8, 14]} />
             <meshStandardMaterial color="#c9ced4" metalness={0.7} roughness={0.3} />
           </mesh>
         ))}
         {/* two hands gripping the rod / reel */}
-        <Hand position={[0.02, -0.12, 0.42]} rotation={[-0.3, 0, 0]} side="right" />
-        <Hand position={[0.04, -0.34, 0.3]} rotation={[-0.5, 0, 0]} side="right" />
+        <Hand position={[0.02, -0.02, 0.3]} rotation={[0.3, 0, 0]} side="right" />
+        <Hand position={[0.04, -0.14, 0.08]} rotation={[0.5, 0, 0]} side="right" />
         {/* invisible tip anchor for the fishing line */}
-        <object3D ref={tipRef} position={[0, 1.0, 1.28]} />
+        <object3D ref={tipRef} position={[0, 0.26, -2.15]} />
       </group>
     </group>
   )

@@ -396,7 +396,7 @@ export function FishingScene() {
     return () => cleanup()
   }, [])
 
-  useFrame((_, delta) => {
+  useFrame((state, delta) => {
     clockAccum.current += delta
     if (clockAccum.current >= 0.2) {
       useTime.getState().tick(clockAccum.current)
@@ -422,10 +422,9 @@ export function FishingScene() {
     playerPos.current.z = THREE.MathUtils.clamp(playerPos.current.z, -0.8, 0.9)
 
     const deckY = boatRef.current.deckY
-    const t = performance.now() * 0.001
-    // gentle boat-driven camera bob (heave), kept subtle to avoid nausea
+    // very gentle boat-driven camera heave, kept subtle to avoid nausea
     camBobT.current += delta
-    const heave = oceanHeight(0, 0, t) * 0.5 + Math.sin(camBobT.current * 1.2) * 0.03
+    const heave = oceanHeight(0, 0, state.clock.elapsedTime) * 0.18 + Math.sin(camBobT.current * 0.9) * 0.012
 
     const targetRotY = lookYaw.current
     const targetRotX = -0.14 + lookPitch.current
@@ -438,9 +437,9 @@ export function FishingScene() {
     const camZ = bz + playerPos.current.z
     camera.position.x = THREE.MathUtils.lerp(camera.position.x, camX, 0.15)
     camera.position.z = THREE.MathUtils.lerp(camera.position.z, camZ, 0.15)
-    camera.position.y = THREE.MathUtils.lerp(camera.position.y, deckY + 1.35 + heave * 0.4, 0.08)
-    // subtle roll following the boat
-    camera.rotation.z = THREE.MathUtils.lerp(camera.rotation.z, (boatRef.current.group?.rotation.z ?? 0) * 0.35, 0.06)
+    camera.position.y = THREE.MathUtils.lerp(camera.position.y, deckY + 1.35 + heave * 0.25, 0.06)
+    // very subtle roll following the boat
+    camera.rotation.z = THREE.MathUtils.lerp(camera.rotation.z, (boatRef.current.group?.rotation.z ?? 0) * 0.12, 0.04)
 
     // make the rod rig follow the camera so the first-person framing is preserved
     if (fpRig.current) {
@@ -482,7 +481,7 @@ export function FishingScene() {
           <group position={[0, 0.15, -1.6]}>
             <mesh>
               <planeGeometry args={[1.6, 0.18]} />
-              <meshBasicMaterial color="#1f2937" transparent opacity={0.85} depthTest={false} />
+              <meshBasicMaterial color="#38bdf8" transparent opacity={0.35} depthTest={false} />
             </mesh>
             <mesh position={[0, 0, 0.01]}>
               <planeGeometry args={[0.28 - (activeFish?.reelDifficulty ?? 0.3) * 0.12, 0.18]} />
@@ -490,7 +489,7 @@ export function FishingScene() {
             </mesh>
             <mesh position={[(reelProgress - 0.5) * 1.6, 0, 0.02]}>
               <planeGeometry args={[0.06, 0.22]} />
-              <meshBasicMaterial color="#f8fafc" depthTest={false} />
+              <meshBasicMaterial color="#e0f2fe" depthTest={false} />
             </mesh>
           </group>
         )}

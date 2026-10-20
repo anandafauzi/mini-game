@@ -96,23 +96,23 @@ export default function App() {
         setQuestions([
           {
             id: 1,
-            text: 'Ikan apa yang terkenal sebagai ikan nasional Indonesia?',
-            options: { a: 'Ikan Mas', b: 'Ikan Lele', c: 'Ikan Nila', d: 'Ikan Tawes' },
-            correct: 'a',
+            text: 'Ikan hiu termasuk golongan ikan yang...',
+            options: { a: 'Bertulang keras', b: 'Bertulang rawan', c: 'Tanpa tulang', d: 'Amfibi' },
+            correct: 'b',
             value: 20,
           },
           {
             id: 2,
-            text: 'Sungai terpanjang di Pulau Jawa adalah?',
-            options: { a: 'Sungai Bengawan Solo', b: 'Sungai Kapuas', c: 'Sungai Musi', d: 'Sungai Ciliwung' },
+            text: 'Terumbu karang dengan keanekaragaman hayati terkaya ada di perairan...',
+            options: { a: 'Dangkal tropis', b: 'Dalam samudra', c: 'Kutub', d: 'Muara sungai' },
             correct: 'a',
             value: 20,
           },
           {
             id: 3,
-            text: 'Habitat ikan gabus paling umum ditemukan di?',
-            options: { a: 'Laut dalam', b: 'Danau pegunungan', c: 'Sungai dan sawah', d: 'Karang terumbu' },
-            correct: 'c',
+            text: 'Tuna bisa berenang sangat cepat karena bentuk tubuhnya menyerupai...',
+            options: { a: 'Ubur-ubur', b: 'Torpedo', c: 'Bintang laut', d: 'Kerang' },
+            correct: 'b',
             value: 20,
           },
         ])

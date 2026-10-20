@@ -1,6 +1,6 @@
 let ctx: AudioContext | null = null
 let masterGain: GainNode | null = null
-let riverGain: GainNode | null = null
+let surfGain: GainNode | null = null
 let windGain: GainNode | null = null
 let started = false
 let muted = false
@@ -30,18 +30,26 @@ export function startAmbient() {
   masterGain.gain.value = muted ? 0 : volume
   masterGain.connect(ctx.destination)
 
-  // River: filtered brown noise
-  riverGain = ctx.createGain()
-  riverGain.gain.value = 0.5
-  const riverSource = ctx.createBufferSource()
-  riverSource.buffer = createNoiseBuffer(ctx, 3)
-  riverSource.loop = true
-  const riverFilter = ctx.createBiquadFilter()
-  riverFilter.type = 'bandpass'
-  riverFilter.frequency.value = 900
-  riverFilter.Q.value = 0.6
-  riverSource.connect(riverFilter).connect(riverGain).connect(masterGain)
-  riverSource.start()
+  // Surf: low rumbling wash with a slow swell (waves rolling in)
+  surfGain = ctx.createGain()
+  surfGain.gain.value = 0.32
+  const surfSource = ctx.createBufferSource()
+  surfSource.buffer = createNoiseBuffer(ctx, 5)
+  surfSource.loop = true
+  const surfFilter = ctx.createBiquadFilter()
+  surfFilter.type = 'lowpass'
+  surfFilter.frequency.value = 520
+  surfFilter.Q.value = 0.4
+  surfSource.connect(surfFilter).connect(surfGain).connect(masterGain)
+  surfSource.start()
+
+  // Slow LFO so the surf breathes like rolling swells (~14s period)
+  const surfLfo = ctx.createOscillator()
+  surfLfo.frequency.value = 0.07
+  const surfLfoGain = ctx.createGain()
+  surfLfoGain.gain.value = 0.16
+  surfLfo.connect(surfLfoGain).connect(surfGain.gain)
+  surfLfo.start()
 
   // Wind: low-pass slow noise
   windGain = ctx.createGain()

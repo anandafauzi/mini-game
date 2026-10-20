@@ -61,15 +61,15 @@ export function Boat({ boatRef }: { boatRef: React.RefObject<BoatRef> }) {
     const h = oceanHeight(x, z, t)
     group.current.position.set(x, h, z)
 
-    // orientation from the surface normal (pitch/roll), damped for comfort
+    // orientation from the surface normal (pitch/roll), heavily damped for comfort
     oceanNormal(x, z, t, norm)
-    const targetPitch = Math.atan2(norm.z, norm.y) * 0.55
-    const targetRoll = -Math.atan2(norm.x, norm.y) * 0.55
-    roll.current = THREE.MathUtils.lerp(roll.current, targetRoll, 0.08)
-    group.current.rotation.x = THREE.MathUtils.lerp(group.current.rotation.x, targetPitch, 0.06)
+    const targetPitch = Math.atan2(norm.z, norm.y) * 0.22
+    const targetRoll = -Math.atan2(norm.x, norm.y) * 0.22
+    roll.current = THREE.MathUtils.lerp(roll.current, targetRoll, 0.04)
+    group.current.rotation.x = THREE.MathUtils.lerp(group.current.rotation.x, targetPitch, 0.035)
     group.current.rotation.z = roll.current
-    // slow yaw sway
-    group.current.rotation.y = Math.sin(t * 0.12) * 0.02
+    // slow yaw sway (kept very subtle)
+    group.current.rotation.y = Math.sin(t * 0.1) * 0.008
 
     if (boatRef.current) {
       boatRef.current.group = group.current

@@ -98,6 +98,12 @@ function Island({
 export function Islands() {
   const islands = useMemo(
     () => [
+      // near-shore islets around the boat (visible while fishing)
+      { pos: [-46, -1.2, -70] as [number, number, number], size: 20, seed: 41 },
+      { pos: [58, -1.4, -88] as [number, number, number], size: 26, seed: 47 },
+      { pos: [-72, -1.3, -140] as [number, number, number], size: 30, seed: 53 },
+      { pos: [40, -1.6, -170] as [number, number, number], size: 34, seed: 59 },
+      // distant tropical islands on the horizon
       { pos: [-160, -2, -420] as [number, number, number], size: 70, seed: 3 },
       { pos: [210, -3, -520] as [number, number, number], size: 110, seed: 9 },
       { pos: [-320, -2.5, -300] as [number, number, number], size: 60, seed: 17 },

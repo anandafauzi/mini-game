@@ -44,12 +44,15 @@ interface GameState {
   gameStartedAt: number
   reelAttemptsLeft: number
   fishCaughtCount: number
+  /** Ids of questions already asked this session (never repeated). */
+  usedQuestionIds: number[]
 
   setPlayerName: (name: string) => void
   setQuestions: (questions: Question[]) => void
   startGame: () => void
   onFishCaught: (fish: FishSpecies, info: CatchInfo) => void
   proceedToQuiz: (question: Question | null) => void
+  nextQuizQuestion: () => Question | null
   returnToFishing: () => void
   onFishEscaped: () => void
   consumeReelAttempt: () => void
@@ -86,6 +89,7 @@ export const useGame = create<GameState>((set, get) => ({
   gameStartedAt: 0,
   reelAttemptsLeft: MAX_REEL_ATTEMPTS,
   fishCaughtCount: 0,
+  usedQuestionIds: [],
 
   setPlayerName: (name) => set({ playerName: name }),
   setQuestions: (questions) => set({ questions }),
@@ -105,6 +109,7 @@ export const useGame = create<GameState>((set, get) => ({
       totalPlayTimeMs: 0,
       reelAttemptsLeft: MAX_REEL_ATTEMPTS,
       fishCaughtCount: 0,
+      usedQuestionIds: [],
     }),
 
   onFishCaught: (fish, info) =>
@@ -128,6 +133,20 @@ export const useGame = create<GameState>((set, get) => ({
       quizStartedAt: Date.now(),
     }),
 
+  /**
+   * Pick a random question that has not been asked yet this session.
+   * Returns null once every question has been answered (so the round can end
+   * instead of repeating questions).
+   */
+  nextQuizQuestion: () => {
+    const { questions, usedQuestionIds } = get()
+    if (questions.length === 0) return null
+    const used = new Set(usedQuestionIds)
+    const remaining = questions.filter((q) => !used.has(q.id))
+    if (remaining.length === 0) return null
+    return remaining[Math.floor(Math.random() * remaining.length)]
+  },
+
   returnToFishing: () =>
     set((s) => ({
       phase: 'fishing',
@@ -150,7 +169,7 @@ export const useGame = create<GameState>((set, get) => ({
   consumeReelAttempt: () => set({ reelAttemptsLeft: Math.max(0, get().reelAttemptsLeft - 1) }),
 
   answerQuiz: (choice) => {
-    const { quizQuestion, quizStartedAt, score, results } = get()
+    const { quizQuestion, quizStartedAt, score, results, usedQuestionIds } = get()
     if (!quizQuestion) {
       set({ phase: 'fishing', quizQuestion: null })
       return
@@ -179,6 +198,9 @@ export const useGame = create<GameState>((set, get) => ({
       caughtFish: null,
       caughtFishInfo: null,
       reelAttemptsLeft: MAX_REEL_ATTEMPTS,
+      usedQuestionIds: usedQuestionIds.includes(quizQuestion.id)
+        ? usedQuestionIds
+        : [...usedQuestionIds, quizQuestion.id],
     })
   },
 

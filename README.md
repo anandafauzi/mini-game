@@ -1,27 +1,28 @@
 # 🎣 Mancing Kuis Nusantara
 
-Game web 3D: mancing ikan di sungai (POV pemancing) dengan latar gunung, desa, dan persawahan. Setiap ikan yang didapat memunculkan **soal kuis** — jawab dengan benar untuk menambah skor. Skor + waktu dikirim ke **leaderboard global**.
+Game web 3D: mancing ikan di laut lepas dari atas kapal (POV pemancing) dengan latar ombak, pulau tropis, dan burung laut. Setiap ikan yang didapat memunculkan **soal kuis** — jawab dengan benar untuk menambah skor. Skor + waktu dikirim ke **leaderboard global**.
 
 Untuk mahasiswa — main langsung di browser, tanpa install.
 
 ## Cara Main
 
-1. Input nama → Mulai (suara ambient sungai/angin/burung otomatis menyala)
-2. **Tombol "Lempar Kail"** atau tekan **Spasi/Enter** untuk melempar kail
-3. **Geser layar** (drag) untuk menoleh melihat sekitar — gunung, desa, sawah
-4. Saat ikan menyambar (indikator "Ikan makan umpan!" + ring kuning) → tekan **Tarik**
+1. Input nama → Mulai (suara ambient ombak/angin/burung laut otomatis menyala)
+2. **Tombol CAST** atau tekan **Spasi/Enter** untuk melempar kail
+3. **Geser layar** (drag) untuk menoleh melihat sekitar — laut, pulau, kapal
+4. Saat ikan menyambar (indikator "Ikan makan umpan!" + ring kuning) → tekan **HOOK**
 5. Tarik saat marker putih di **zona hijau** (makin langka ikannya, makin sempit zonanya)
 6. Gagal tarik? Kamu punya **3 kesempatan** per soal. Habis 3x → ikan lepas & soal gugur
 7. Jawab soal kuis yang muncul — **waktu 2 menit**, cepat = bonus poin!
 
 ### Fitur
 
-- Grafis 3D: air sungai beriak (fresnel + shimmer), gunung bersalju, sawah terasering, desa, awan bergerak, burung terbang
-- Audio ambient: suara sungai, angin bertiup (LFO gust), kicau burung acak, efek lempar/splas/tangkap
+- Grafis 3D: samudra dengan ombak Gerstner (fresnel + sun glitter + busa puncak), kapal yang mengikuti gelombang, pulau tropis, burung laut, kabut laut
+- Audio ambient: suara ombak (swell LFO), angin bertiup (LFO gust), kicau burung acak, efek lempar/splash/tangkap
 - Kamera POV yang bisa ditoleh (drag look-around)
-- 9 jenis ikan air tawar (common → legendary)
+- 15 jenis ikan laut (common → legendary), tiap spesies punya siluet & pola tubuh berbeda
+- Soal kuis tidak berulang dalam satu sesi — sesi berakhir otomatis kalau soal habis
 - Panel kuis dari Google Sheets (edit spreadsheet → game langsung update)
-- Leaderboard global Supabase
+- Leaderboard global Supabase (satu baris per pemain, skor akhir menang)
 
 ### Skor
 
@@ -56,7 +57,8 @@ Tanpa `.env`, game pakai 3 soal contoh.
 
 1. Buat project gratis di [supabase.com](https://supabase.com)
 2. Buka **SQL Editor**, jalankan isi `supabase/leaderboard.sql`
-3. Salis **Project URL** + **anon key** ke `.env`:
+   (database lama yang sudah punya data: jalankan `supabase/migrate_leaderboard_one_row_per_player.sql` sekali)
+3. Salin **Project URL** + **anon key** ke `.env`:
 
 ```
 VITE_SUPABASE_URL=https://xxxx.supabase.co

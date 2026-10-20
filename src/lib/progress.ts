@@ -40,7 +40,7 @@ export interface ProgressState {
   reset: () => void
 }
 
-const STORAGE_KEY = 'sungai-lestari-progress-v1'
+const STORAGE_KEY = 'laut-nusantara-progress-v1'
 
 /** XP needed to reach the next level from the given level. */
 export function xpForLevel(level: number): number {

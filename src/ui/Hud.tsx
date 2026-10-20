@@ -14,7 +14,7 @@ function Icon({ path, className = '' }: { path: string; className?: string }) {
 }
 
 const ICON = {
-  mountain: 'M3 20h18L14 6l-4 7-2-3-5 10z',
+  wave: 'M2 8c2-2 4-2 6 0s4 2 6 0 4-2 6 0M2 14c2-2 4-2 6 0s4 2 6 0 4-2 6 0',
   sun: 'M12 4v2m0 12v2m8-8h-2M6 12H4m12.9-5.9-1.4 1.4M8.5 15.5l-1.4 1.4m10.8 0-1.4-1.4M8.5 8.5 7.1 7.1M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z',
   pause: 'M10 5v14M14 5v14',
   fish: 'M3 12c3-5 9-5 12 0-3 5-9 5-12 0zm12 0 5-3v6l-5-3z',
@@ -31,12 +31,12 @@ function TopLeft() {
 
   return (
     <div data-ui className="fixed top-3 left-3 z-30 flex items-center gap-3 rounded-2xl border border-white/15 bg-black/45 px-3 py-2 text-white backdrop-blur-md">
-      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/25 text-emerald-300">
-        <Icon path={ICON.mountain} className="h-5 w-5" />
+      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-sky-500/25 text-sky-300">
+        <Icon path={ICON.wave} className="h-5 w-5" />
       </div>
       <div className="min-w-[150px]">
         <div className="flex items-center justify-between">
-          <span className="text-sm font-bold leading-tight">Sungai Lestari</span>
+          <span className="text-sm font-bold leading-tight">Laut Nusantara</span>
           <span className="rounded-md bg-amber-400/20 px-1.5 text-[10px] font-bold text-amber-300">
             Lv {level}
           </span>

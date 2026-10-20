@@ -2,12 +2,21 @@ export type Rarity = 'common' | 'uncommon' | 'rare' | 'legendary'
 
 export type BaitId = 'cacing' | 'pelet' | 'lumut' | 'daun' | 'artifisial'
 
+/** Body silhouette archetype used by the 3D fish mesh. */
+export type FishShape = 'torpedo' | 'round' | 'flat' | 'long' | 'ribbon'
+
 export interface FishSpecies {
   id: string
   name: string
   rarity: Rarity
   color: string
   bellyColor: string
+  /** Accent colour for fins / tail. */
+  finColor: string
+  /** Body silhouette archetype. */
+  shape: FishShape
+  /** Stripes/spots pattern painted on the body. */
+  pattern: 'none' | 'stripes' | 'spots' | 'bands'
   /** Base visual size (world units) used for the 3D mesh. */
   size: number
   /** Minimum / maximum weight in kilograms. */
@@ -49,59 +58,141 @@ export const RARITY_XP: Record<Rarity, number> = {
 }
 
 export const FISH_SPECIES: FishSpecies[] = [
+  /* ---------- Kecil (small) ---------- */
   {
-    id: 'lele', name: 'Lele', rarity: 'common', color: '#3f3f46', bellyColor: '#a1a1aa',
-    size: 0.5, minWeight: 0.3, maxWeight: 3, pricePerKg: 22000, bonus: 10, reelDifficulty: 0.25,
-    spawnWeight: 26, preferredBaits: ['cacing', 'lumut'],
-    activity: { pagi: 0.7, siang: 0.4, sore: 0.8, malam: 1.0 },
+    id: 'teri', name: 'Ikan Teri', rarity: 'common', color: '#cfd8e3', bellyColor: '#f1f5f9',
+    finColor: '#9fb3c8', shape: 'long', pattern: 'none',
+    size: 0.3, minWeight: 0.02, maxWeight: 0.2, pricePerKg: 18000, bonus: 10, reelDifficulty: 0.15,
+    spawnWeight: 24, preferredBaits: ['pelet', 'cacing'],
+    activity: { pagi: 1.0, siang: 0.7, sore: 0.9, malam: 0.4 },
   },
   {
-    id: 'nila', name: 'Ikan Nila', rarity: 'common', color: '#64748b', bellyColor: '#e2e8f0',
-    size: 0.45, minWeight: 0.2, maxWeight: 1.5, pricePerKg: 28000, bonus: 10, reelDifficulty: 0.3,
-    spawnWeight: 24, preferredBaits: ['pelet', 'cacing'],
+    id: 'kembung', name: 'Ikan Kembung', rarity: 'common', color: '#3b6ea5', bellyColor: '#dbeafe',
+    finColor: '#24476b', shape: 'torpedo', pattern: 'bands',
+    size: 0.36, minWeight: 0.05, maxWeight: 0.4, pricePerKg: 32000, bonus: 10, reelDifficulty: 0.25,
+    spawnWeight: 22, preferredBaits: ['pelet', 'artifisial'],
+    activity: { pagi: 0.9, siang: 0.8, sore: 0.8, malam: 0.4 },
+  },
+  {
+    id: 'selar', name: 'Ikan Selar', rarity: 'common', color: '#4b7fa6', bellyColor: '#e8f2f9',
+    finColor: '#2f5c78', shape: 'torpedo', pattern: 'stripes',
+    size: 0.34, minWeight: 0.05, maxWeight: 0.45, pricePerKg: 30000, bonus: 10, reelDifficulty: 0.28,
+    spawnWeight: 20, preferredBaits: ['pelet', 'artifisial'],
+    activity: { pagi: 0.9, siang: 0.8, sore: 0.8, malam: 0.4 },
+  },
+  {
+    id: 'tembang', name: 'Ikan Tembang', rarity: 'common', color: '#7f9bb0', bellyColor: '#f3f7fa',
+    finColor: '#5a7688', shape: 'torpedo', pattern: 'spots',
+    size: 0.33, minWeight: 0.04, maxWeight: 0.35, pricePerKg: 26000, bonus: 10, reelDifficulty: 0.22,
+    spawnWeight: 18, preferredBaits: ['pelet', 'cacing'],
+    activity: { pagi: 0.8, siang: 0.7, sore: 0.8, malam: 0.4 },
+  },
+  {
+    id: 'mujair', name: 'Ikan Mujair Laut', rarity: 'common', color: '#6b7280', bellyColor: '#e5e7eb',
+    finColor: '#4b5563', shape: 'round', pattern: 'stripes',
+    size: 0.4, minWeight: 0.15, maxWeight: 0.9, pricePerKg: 34000, bonus: 10, reelDifficulty: 0.3,
+    spawnWeight: 16, preferredBaits: ['pelet', 'daun'],
     activity: { pagi: 0.9, siang: 0.8, sore: 0.7, malam: 0.3 },
   },
+  /* ---------- Sedang (medium) ---------- */
   {
-    id: 'tawes', name: 'Ikan Tawes', rarity: 'common', color: '#78716c', bellyColor: '#fcd34d',
-    size: 0.42, minWeight: 0.15, maxWeight: 1.2, pricePerKg: 30000, bonus: 10, reelDifficulty: 0.3,
-    spawnWeight: 20, preferredBaits: ['daun', 'pelet'],
-    activity: { pagi: 0.8, siang: 0.7, sore: 0.6, malam: 0.3 },
+    id: 'ekor_kuning', name: 'Ikan Ekor Kuning', rarity: 'uncommon', color: '#2f7bbf', bellyColor: '#e0f2fe',
+    finColor: '#facc15', shape: 'torpedo', pattern: 'stripes',
+    size: 0.5, minWeight: 0.3, maxWeight: 2, pricePerKg: 48000, bonus: 25, reelDifficulty: 0.4,
+    spawnWeight: 13, preferredBaits: ['pelet', 'artifisial'],
+    activity: { pagi: 0.9, siang: 0.7, sore: 0.8, malam: 0.4 },
   },
   {
-    id: 'mas', name: 'Ikan Mas', rarity: 'uncommon', color: '#f97316', bellyColor: '#fde68a',
-    size: 0.55, minWeight: 0.5, maxWeight: 5, pricePerKg: 45000, bonus: 25, reelDifficulty: 0.45,
-    spawnWeight: 14, preferredBaits: ['pelet', 'cacing'],
-    activity: { pagi: 0.9, siang: 0.6, sore: 0.8, malam: 0.4 },
+    id: 'kakap_merah', name: 'Kakap Merah', rarity: 'uncommon', color: '#c2413a', bellyColor: '#fbd5d0',
+    finColor: '#8f2d27', shape: 'round', pattern: 'spots',
+    size: 0.55, minWeight: 0.4, maxWeight: 3, pricePerKg: 62000, bonus: 25, reelDifficulty: 0.45,
+    spawnWeight: 12, preferredBaits: ['pelet', 'cacing', 'artifisial'],
+    activity: { pagi: 0.7, siang: 0.6, sore: 0.8, malam: 0.7 },
   },
   {
-    id: 'patin', name: 'Ikan Patin', rarity: 'uncommon', color: '#475569', bellyColor: '#cbd5e1',
-    size: 0.6, minWeight: 1, maxWeight: 12, pricePerKg: 38000, bonus: 25, reelDifficulty: 0.5,
-    spawnWeight: 11, preferredBaits: ['pelet', 'lumut'],
+    id: 'baronang', name: 'Ikan Baronang', rarity: 'uncommon', color: '#7c7a55', bellyColor: '#eae6cf',
+    finColor: '#57553a', shape: 'round', pattern: 'spots',
+    size: 0.52, minWeight: 0.4, maxWeight: 2.5, pricePerKg: 58000, bonus: 25, reelDifficulty: 0.5,
+    spawnWeight: 11, preferredBaits: ['lumut', 'daun'],
+    activity: { pagi: 0.8, siang: 0.7, sore: 0.7, malam: 0.4 },
+  },
+  {
+    id: 'tenggiri', name: 'Ikan Tenggiri', rarity: 'uncommon', color: '#334155', bellyColor: '#cbd5e1',
+    finColor: '#1e293b', shape: 'torpedo', pattern: 'stripes',
+    size: 0.6, minWeight: 0.6, maxWeight: 5, pricePerKg: 75000, bonus: 25, reelDifficulty: 0.58,
+    spawnWeight: 10, preferredBaits: ['artifisial', 'pelet'],
+    activity: { pagi: 0.9, siang: 0.6, sore: 0.8, malam: 0.5 },
+  },
+  {
+    id: 'tongkol', name: 'Ikan Tongkol', rarity: 'uncommon', color: '#44566b', bellyColor: '#dde5ee',
+    finColor: '#2b3947', shape: 'torpedo', pattern: 'bands',
+    size: 0.58, minWeight: 0.5, maxWeight: 4, pricePerKg: 56000, bonus: 25, reelDifficulty: 0.55,
+    spawnWeight: 10, preferredBaits: ['pelet', 'artifisial'],
+    activity: { pagi: 0.9, siang: 0.8, sore: 0.8, malam: 0.4 },
+  },
+  {
+    id: 'bawal_hitam', name: 'Bawal Hitam', rarity: 'uncommon', color: '#1f2937', bellyColor: '#94a3b8',
+    finColor: '#111827', shape: 'round', pattern: 'none',
+    size: 0.56, minWeight: 0.6, maxWeight: 4, pricePerKg: 68000, bonus: 25, reelDifficulty: 0.6,
+    spawnWeight: 8, preferredBaits: ['artifisial', 'daun'],
+    activity: { pagi: 0.8, siang: 0.6, sore: 0.7, malam: 0.5 },
+  },
+  {
+    id: 'kue', name: 'Ikan Kue', rarity: 'uncommon', color: '#c08457', bellyColor: '#f5e2cf',
+    finColor: '#8a5a34', shape: 'round', pattern: 'bands',
+    size: 0.54, minWeight: 0.5, maxWeight: 3.5, pricePerKg: 64000, bonus: 25, reelDifficulty: 0.5,
+    spawnWeight: 9, preferredBaits: ['pelet', 'cacing'],
+    activity: { pagi: 0.8, siang: 0.7, sore: 0.7, malam: 0.5 },
+  },
+  /* ---------- Besar (large) ---------- */
+  {
+    id: 'kerapu', name: 'Kerapu Bebek', rarity: 'rare', color: '#5b6b4a', bellyColor: '#e6ecdd',
+    finColor: '#3f4d33', shape: 'round', pattern: 'spots',
+    size: 0.72, minWeight: 1.5, maxWeight: 12, pricePerKg: 95000, bonus: 50, reelDifficulty: 0.68,
+    spawnWeight: 5, preferredBaits: ['pelet', 'cacing', 'artifisial'],
     activity: { pagi: 0.6, siang: 0.5, sore: 0.7, malam: 0.8 },
   },
   {
-    id: 'gabus', name: 'Ikan Gabus', rarity: 'uncommon', color: '#365314', bellyColor: '#a3e635',
-    size: 0.55, minWeight: 0.4, maxWeight: 4, pricePerKg: 55000, bonus: 25, reelDifficulty: 0.55,
-    spawnWeight: 10, preferredBaits: ['cacing', 'artifisial'],
-    activity: { pagi: 0.8, siang: 0.4, sore: 0.9, malam: 0.7 },
+    id: 'kakap_putih', name: 'Kakap Putih', rarity: 'rare', color: '#94a3b8', bellyColor: '#f1f5f9',
+    finColor: '#64748b', shape: 'torpedo', pattern: 'none',
+    size: 0.78, minWeight: 2, maxWeight: 18, pricePerKg: 105000, bonus: 50, reelDifficulty: 0.72,
+    spawnWeight: 4, preferredBaits: ['artifisial', 'pelet'],
+    activity: { pagi: 0.7, siang: 0.5, sore: 0.7, malam: 0.6 },
   },
   {
-    id: 'baung', name: 'Ikan Baung', rarity: 'rare', color: '#7c2d12', bellyColor: '#fdba74',
-    size: 0.65, minWeight: 1, maxWeight: 8, pricePerKg: 65000, bonus: 50, reelDifficulty: 0.65,
-    spawnWeight: 5, preferredBaits: ['cacing', 'lumut'],
-    activity: { pagi: 0.5, siang: 0.3, sore: 0.6, malam: 1.0 },
+    id: 'cakalang', name: 'Ikan Cakalang', rarity: 'rare', color: '#2b3d52', bellyColor: '#cbd5e1',
+    finColor: '#1b2a3a', shape: 'torpedo', pattern: 'stripes',
+    size: 0.85, minWeight: 3, maxWeight: 20, pricePerKg: 88000, bonus: 50, reelDifficulty: 0.75,
+    spawnWeight: 4, preferredBaits: ['artifisial', 'pelet'],
+    activity: { pagi: 0.9, siang: 0.6, sore: 0.8, malam: 0.4 },
   },
   {
-    id: 'bawal', name: 'Bawal Air Tawar', rarity: 'rare', color: '#1e293b', bellyColor: '#94a3b8',
-    size: 0.7, minWeight: 1.5, maxWeight: 10, pricePerKg: 72000, bonus: 50, reelDifficulty: 0.7,
-    spawnWeight: 4, preferredBaits: ['artifisial', 'daun'],
-    activity: { pagi: 0.7, siang: 0.5, sore: 0.6, malam: 0.5 },
+    id: 'tuna', name: 'Ikan Tuna', rarity: 'rare', color: '#33506b', bellyColor: '#dce6f0',
+    finColor: '#22364a', shape: 'torpedo', pattern: 'none',
+    size: 0.95, minWeight: 5, maxWeight: 40, pricePerKg: 140000, bonus: 50, reelDifficulty: 0.8,
+    spawnWeight: 3, preferredBaits: ['artifisial', 'pelet'],
+    activity: { pagi: 0.8, siang: 0.6, sore: 0.8, malam: 0.5 },
   },
   {
-    id: 'sturgeon', name: 'Patin Raksasa', rarity: 'legendary', color: '#1e3a5f', bellyColor: '#e0f2fe',
-    size: 0.95, minWeight: 8, maxWeight: 60, pricePerKg: 120000, bonus: 100, reelDifficulty: 0.85,
-    spawnWeight: 1.5, preferredBaits: ['lumut', 'artifisial'],
-    activity: { pagi: 0.3, siang: 0.2, sore: 0.4, malam: 0.9 },
+    id: 'marlin', name: 'Ikan Marlin', rarity: 'legendary', color: '#1e3a5f', bellyColor: '#e0f2fe',
+    finColor: '#132a45', shape: 'long', pattern: 'bands',
+    size: 1.05, minWeight: 20, maxWeight: 120, pricePerKg: 180000, bonus: 100, reelDifficulty: 0.9,
+    spawnWeight: 1.4, preferredBaits: ['artifisial'],
+    activity: { pagi: 0.5, siang: 0.5, sore: 0.7, malam: 0.6 },
+  },
+  {
+    id: 'hiu', name: 'Hiu Karang', rarity: 'legendary', color: '#5b6773', bellyColor: '#e7edf2',
+    finColor: '#3d4750', shape: 'long', pattern: 'none',
+    size: 1.0, minWeight: 15, maxWeight: 90, pricePerKg: 160000, bonus: 100, reelDifficulty: 0.92,
+    spawnWeight: 1.2, preferredBaits: ['artifisial', 'cacing'],
+    activity: { pagi: 0.4, siang: 0.4, sore: 0.6, malam: 0.9 },
+  },
+  {
+    id: 'napoleon', name: 'Ikan Napoleon', rarity: 'legendary', color: '#1f6b57', bellyColor: '#d7f0e4',
+    finColor: '#134a3c', shape: 'round', pattern: 'spots',
+    size: 1.1, minWeight: 25, maxWeight: 150, pricePerKg: 220000, bonus: 100, reelDifficulty: 0.88,
+    spawnWeight: 1, preferredBaits: ['pelet', 'lumut'],
+    activity: { pagi: 0.6, siang: 0.6, sore: 0.7, malam: 0.7 },
   },
 ]
 

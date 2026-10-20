@@ -7,8 +7,9 @@ export function CatchPanel() {
   const phase = useGame((s) => s.phase)
   const caughtFish = useGame((s) => s.caughtFish)
   const caughtFishInfo = useGame((s) => s.caughtFishInfo)
-  const questions = useGame((s) => s.questions)
+  const nextQuizQuestion = useGame((s) => s.nextQuizQuestion)
   const proceedToQuiz = useGame((s) => s.proceedToQuiz)
+  const finishGame = useGame((s) => s.finishGame)
   const addCatch = useProgress((s) => s.addCatch)
 
   // roll weight/value once per catch
@@ -30,12 +31,11 @@ export function CatchPanel() {
     caughtAt: Date.now(),
   })
 
-  const nextQuestion = () =>
-    questions.length > 0 ? questions[Math.floor(Math.random() * questions.length)] : null
-
   const handleOpenQuiz = () => {
     addCatch(buildRecord())
-    proceedToQuiz(nextQuestion())
+    const next = nextQuizQuestion()
+    if (next) proceedToQuiz(next)
+    else finishGame()
   }
 
   const green = caughtFishInfo?.inGreen

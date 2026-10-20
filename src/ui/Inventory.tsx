@@ -3,11 +3,11 @@ import { RARITY_LABEL } from '../lib/fish'
 import type { BaitId } from '../lib/fish'
 
 const BAIT_INFO: Record<BaitId, { label: string; emoji: string; desc: string }> = {
-  cacing: { label: 'Cacing', emoji: '🪱', desc: 'Serba bisa, disukai lele & gabus' },
-  pelet: { label: 'Pelet', emoji: '🟤', desc: 'Nila, mas, patin suka' },
-  lumut: { label: 'Lumut', emoji: '🌿', desc: 'Lele, patin, baung, raksasa' },
-  daun: { label: 'Daun', emoji: '🍃', desc: 'Tawes, bawal' },
-  artifisial: { label: 'Umpan Tiruan', emoji: '✨', desc: 'Gabus, bawal, raksasa' },
+  cacing: { label: 'Cacing', emoji: '🪱', desc: 'Kakap merah, kerapu & hiu menyukainya' },
+  pelet: { label: 'Pelet', emoji: '🟤', desc: 'Ikan kecil, tongkol & napoleon' },
+  lumut: { label: 'Lumut', emoji: '🌿', desc: 'Baronang & napoleon suka' },
+  daun: { label: 'Daun', emoji: '🍃', desc: 'Bawal hitam & baronang' },
+  artifisial: { label: 'Umpan Tiruan', emoji: '✨', desc: 'Tuna, marlin, hiu & tenggiri' },
 }
 
 export function Inventory({ onClose }: { onClose: () => void }) {
