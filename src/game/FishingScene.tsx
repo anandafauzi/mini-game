@@ -147,6 +147,9 @@ export function FishingScene() {
   const playerPos = useRef(new THREE.Vector3(0, 0, 0))
   const clockAccum = useRef(0)
   const camBobT = useRef(0)
+  // head-stabilised deck height: camera rides a slowed, reduced version of
+  // the boat's heave so the view never makes the player seasick
+  const smoothDeckY = useRef(0)
 
   const startCast = useCallback(() => {
     if (state !== 'idle' || phase !== 'fishing') return
@@ -428,9 +431,14 @@ export function FishingScene() {
     playerPos.current.z = THREE.MathUtils.clamp(playerPos.current.z, -0.8, 0.9)
 
     const deckY = boatRef.current.deckY
-    // minimal boat-driven heave, kept tiny to avoid motion sickness
+    // almost no extra heave; the smoothed deck follow below does the lifting
     camBobT.current += delta
-    const heave = oceanHeight(0, 0, state.clock.elapsedTime) * 0.06 + Math.sin(camBobT.current * 0.9) * 0.005
+    const heave = oceanHeight(0, 0, state.clock.elapsedTime) * 0.02 + Math.sin(camBobT.current * 0.9) * 0.002
+
+    // head-stabilised vertical: follow only ~55% of the boat's wave motion,
+    // and slowly, so the horizon stays visually calm
+    smoothDeckY.current = THREE.MathUtils.lerp(smoothDeckY.current, deckY, 0.035)
+    const camDeckY = deckY * 0.45 + smoothDeckY.current * 0.55
 
     const targetRotY = lookYaw.current
     const targetRotX = -0.14 + lookPitch.current
@@ -443,9 +451,9 @@ export function FishingScene() {
     const camZ = bz + playerPos.current.z
     camera.position.x = THREE.MathUtils.lerp(camera.position.x, camX, 0.15)
     camera.position.z = THREE.MathUtils.lerp(camera.position.z, camZ, 0.15)
-    camera.position.y = THREE.MathUtils.lerp(camera.position.y, deckY + 1.35 + heave * 0.25, 0.05)
-    // barely-there roll following the boat
-    camera.rotation.z = THREE.MathUtils.lerp(camera.rotation.z, (boatRef.current.group?.rotation.z ?? 0) * 0.05, 0.03)
+    camera.position.y = THREE.MathUtils.lerp(camera.position.y, camDeckY + 1.35 + heave * 0.2, 0.06)
+    // roll: just a whisper of the boat's roll
+    camera.rotation.z = THREE.MathUtils.lerp(camera.rotation.z, (boatRef.current.group?.rotation.z ?? 0) * 0.02, 0.03)
 
     // Anchor the first-person rod rig to the camera frustum so the rod stays
     // visible on both wide desktop and narrow portrait phone screens.
