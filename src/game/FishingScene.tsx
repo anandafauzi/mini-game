@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useFrame, useThree, useThree as useR3F } from '@react-three/fiber'
 import * as THREE from 'three'
-import { Environment } from './Environment'
+import { Environment } from './Terrain'
 import { Water } from './Water'
 import { Riverbed, Rapids } from './Riverbed'
 import { Fish } from './Fish'
@@ -362,7 +362,7 @@ export function FishingScene() {
   return (
     <>
       <DayNight />
-      <fog attach="fog" args={['#d6e8f0', 22, 62]} />
+      <fog attach="fog" args={['#cfe2ee', 30, 110]} />
 
       <Clouds />
       <Birds />

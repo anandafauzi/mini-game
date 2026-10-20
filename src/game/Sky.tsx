@@ -35,14 +35,15 @@ function Cloud({
     <group ref={groupRef} position={position} scale={scale}>
       {puffs.map((p, i) => (
         <mesh key={i} position={[p[0], p[1], p[2]]}>
-          <sphereGeometry args={[p[3], 12, 10]} />
+          <sphereGeometry args={[p[3], 16, 12]} />
           <meshStandardMaterial
             color="#ffffff"
             transparent
-            opacity={0.9}
+            opacity={0.85}
             roughness={1}
-            emissive="#e8f0f8"
-            emissiveIntensity={0.1}
+            emissive="#dceaf6"
+            emissiveIntensity={0.14}
+            depthWrite={false}
           />
         </mesh>
       ))}

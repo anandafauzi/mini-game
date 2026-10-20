@@ -1,5 +1,6 @@
 import { Canvas } from '@react-three/fiber'
 import { useEffect, useState } from 'react'
+import * as THREE from 'three'
 import { FishingScene } from './game/FishingScene'
 import { useGame } from './lib/gameState'
 import { loadQuestions } from './lib/questions'
@@ -101,8 +102,18 @@ export default function App() {
       <div id="game-canvas-container" className="absolute inset-0">
         <Canvas
           shadows
-          camera={{ position: [0, 1.6, 3], fov: 62 }}
-          gl={{ antialias: true, toneMappingExposure: 1.08 }}
+          dpr={[1, 1.75]}
+          camera={{ position: [0, 1.6, 3], fov: 62, near: 0.1, far: 400 }}
+          gl={{
+            antialias: true,
+            toneMapping: THREE.ACESFilmicToneMapping,
+            toneMappingExposure: 1.05,
+            outputColorSpace: THREE.SRGBColorSpace,
+            powerPreference: 'high-performance',
+          }}
+          onCreated={({ gl }) => {
+            gl.shadowMap.type = THREE.PCFSoftShadowMap
+          }}
         >
           <FishingScene />
         </Canvas>
