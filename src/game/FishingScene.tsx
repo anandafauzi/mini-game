@@ -1,25 +1,29 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
-import { Ocean } from './Ocean'
+import { Terrain } from './Terrain'
+import { Mountains } from './Mountains'
+import { RiverWater } from './RiverWater'
+import { Vegetation } from './Vegetation'
+import { Props } from './Props'
 import { Boat, type BoatRef } from './Boat'
-import { Islands, SeaBirds, SeaHaze } from './Islands'
 import { Fish } from './Fish'
 import { Bobber, FishingRod, FishingLine } from './FishingRod'
-import { Clouds, Particles } from './Sky'
+import { Clouds, Motes } from './Sky'
 import { DayNight } from './DayNight'
 import { pickRandomSpecies, type FishSpecies } from '../lib/fish'
 import { useGame } from '../lib/gameState'
 import { useProgress } from '../lib/progress'
 import { useTime } from '../lib/timeOfDay'
+import { useGraphics } from '../lib/graphics'
 import { playerInput, initKeyboard, combineInput } from '../lib/playerInput'
 import { playCastSound, playCatchSound, playSplashSound, playAlertSound, startReelLoop, stopReelLoop } from '../lib/audio'
 import { emitFishingState } from '../lib/useFishingAction'
-import { oceanHeight } from './oceanWaves'
+import { waterHeight } from './waterWaves'
 
 type FishingState = 'idle' | 'casting' | 'waiting' | 'approaching' | 'bite' | 'reeling' | 'caught' | 'escaped'
 
-// Cast lands in the sea ahead of the boat.
+// The cast lands in the river channel ahead of the boat.
 const BOBBER_REST: [number, number, number] = [0.2, 0, -7]
 const CAST_TARGET: [number, number, number] = [0.6, 0, -10.5]
 
@@ -29,11 +33,11 @@ const _right = new THREE.Vector3()
 const _down = new THREE.Vector3()
 
 /**
- * Bobber that floats on the animated sea surface.
+ * Bobber that floats on the animated river surface.
  *
  * The bobber's horizontal position comes from game state, but its vertical
  * position is driven every frame from the shared wave field so it rides the
- * swell smoothly (no render-time sampling / desync). Its live world position
+ * surface smoothly (no render-time sampling / desync). Its live world position
  * is published into `posRef` so the line, ripple and splash can follow it.
  */
 function FloatingBobber({
@@ -46,10 +50,10 @@ function FloatingBobber({
   posRef: React.MutableRefObject<THREE.Vector3>
 }) {
   const groupRef = useRef<THREE.Group>(null)
-  const smoothY = useRef(oceanHeight(xz[0], xz[1], 0))
+  const smoothY = useRef(waterHeight(xz[0], xz[1], 0))
   useFrame((state) => {
     const t = state.clock.elapsedTime
-    const target = oceanHeight(xz[0], xz[1], t)
+    const target = waterHeight(xz[0], xz[1], t)
     smoothY.current = THREE.MathUtils.lerp(smoothY.current, target, 0.2)
     const y = smoothY.current - dip
     if (groupRef.current) groupRef.current.position.set(xz[0], y, xz[1])
@@ -62,7 +66,7 @@ function FloatingBobber({
   )
 }
 
-/** Expanding ripple rings on the sea surface around the bobber. */
+/** Expanding ripple rings on the river surface around the bobber. */
 function Ripple({
   xz,
   yRef,
@@ -109,6 +113,8 @@ export function FishingScene() {
   const onFishEscaped = useGame((s) => s.onFishEscaped)
   const consumeReelAttempt = useGame((s) => s.consumeReelAttempt)
   const caughtFishInfo = useGame((s) => s.caughtFishInfo)
+  const fogNear = useGraphics((s) => s.settings.fogNear)
+  const fogFar = useGraphics((s) => s.settings.fogFar)
 
   const [state, setState] = useState<FishingState>('idle')
   const [castProgress, setCastProgress] = useState<number | null>(null)
@@ -433,7 +439,7 @@ export function FishingScene() {
     const deckY = boatRef.current.deckY
     // almost no extra heave; the smoothed deck follow below does the lifting
     camBobT.current += delta
-    const heave = oceanHeight(0, 0, state.clock.elapsedTime) * 0.02 + Math.sin(camBobT.current * 0.9) * 0.002
+    const heave = waterHeight(0, 0, state.clock.elapsedTime) * 0.02 + Math.sin(camBobT.current * 0.9) * 0.002
 
     // head-stabilised vertical: follow only ~55% of the boat's wave motion,
     // and slowly, so the horizon stays visually calm
@@ -441,7 +447,7 @@ export function FishingScene() {
     const camDeckY = deckY * 0.45 + smoothDeckY.current * 0.55
 
     const targetRotY = lookYaw.current
-    const targetRotX = -0.14 + lookPitch.current
+    const targetRotX = -0.1 + lookPitch.current
     camera.rotation.y = THREE.MathUtils.lerp(camera.rotation.y, targetRotY, 0.1)
     camera.rotation.x = THREE.MathUtils.lerp(camera.rotation.x, targetRotX, 0.1)
 
@@ -451,12 +457,13 @@ export function FishingScene() {
     const camZ = bz + playerPos.current.z
     camera.position.x = THREE.MathUtils.lerp(camera.position.x, camX, 0.15)
     camera.position.z = THREE.MathUtils.lerp(camera.position.z, camZ, 0.15)
-    camera.position.y = THREE.MathUtils.lerp(camera.position.y, camDeckY + 1.35 + heave * 0.2, 0.06)
+    camera.position.y = THREE.MathUtils.lerp(camera.position.y, camDeckY + 1.42 + heave * 0.2, 0.06)
     // roll: just a whisper of the boat's roll
     camera.rotation.z = THREE.MathUtils.lerp(camera.rotation.z, (boatRef.current.group?.rotation.z ?? 0) * 0.02, 0.03)
 
     // Anchor the first-person rod rig to the camera frustum so the rod stays
-    // visible on both wide desktop and narrow portrait phone screens.
+    // visible on both wide desktop and narrow portrait phone screens, tucked
+    // into the lower right so it never blocks the river.
     if (fpRig.current) {
       const cam = camera as THREE.PerspectiveCamera
       _fwd.set(0, 0, -1).applyQuaternion(cam.quaternion)
@@ -464,12 +471,13 @@ export function FishingScene() {
       _down.set(0, -1, 0).applyQuaternion(cam.quaternion)
       // lateral offset sized relative to the frustum half-width at rig depth
       const halfAtRef = Math.tan((cam.fov * Math.PI) / 360) * cam.aspect * 0.42
-      const lat = THREE.MathUtils.clamp(halfAtRef * 0.45, 0.1, 0.3)
+      const lat = THREE.MathUtils.clamp(halfAtRef * 0.5, 0.12, 0.34)
+      fpRig.current.scale.setScalar(0.88)
       fpRig.current.position
         .copy(cam.position)
         .addScaledVector(_right, lat)
-        .addScaledVector(_down, 0.3)
-        .addScaledVector(_fwd, 0.42)
+        .addScaledVector(_down, 0.34)
+        .addScaledVector(_fwd, 0.44)
       fpRig.current.quaternion.copy(cam.quaternion)
 
       // scale the reel bar so it never overflows narrow portrait screens
@@ -488,15 +496,16 @@ export function FishingScene() {
   return (
     <>
       <DayNight />
-      <fog attach="fog" args={['#cfe3f0', 140, 1100]} />
+      <fog attach="fog" args={['#c8dae6', fogNear, fogFar]} />
 
       <Clouds />
-      <SeaHaze />
-      <Islands />
-      <SeaBirds />
-      <Particles />
+      <Mountains />
+      <Terrain />
+      <Vegetation />
+      <Props />
+      <Motes />
 
-      <Ocean />
+      <RiverWater />
       <Boat boatRef={boatRef} />
 
       {/* Splash burst when fish is hooked / cast lands */}

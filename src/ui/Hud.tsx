@@ -36,7 +36,7 @@ function TopLeft() {
       </div>
       <div className="min-w-[150px]">
         <div className="flex items-center justify-between">
-          <span className="text-sm font-bold leading-tight">Laut Nusantara</span>
+          <span className="text-sm font-bold leading-tight">Sungai Nusantara</span>
           <span className="rounded-md bg-amber-400/20 px-1.5 text-[10px] font-bold text-amber-300">
             Lv {level}
           </span>

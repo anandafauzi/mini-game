@@ -2,114 +2,122 @@ import { useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { useGraphics } from '../lib/graphics'
+import { seededRandom } from './noise'
 
 /**
- * Sea sky: a high drifting cumulus layer and fine sea-spray specks around the
- * boat. Sea birds and distant haze live in Islands.tsx. All clouds sit far
- * above the boat and drift slowly so the horizon stays open and readable.
+ * Morning sky dressing: a few soft cumulus billboards drifting high over the
+ * valley, plus a whisper of airborne motes catching the light near the banks.
+ * Replaces the old bubble-clouds / sea-spray pair.
  */
 
-function Cloud({
-  position,
-  scale,
-  speed,
-}: {
-  position: [number, number, number]
-  scale: number
+function cloudTexture(seed: number): THREE.CanvasTexture {
+  const W = 256
+  const H = 128
+  const canvas = document.createElement('canvas')
+  canvas.width = W
+  canvas.height = H
+  const ctx = canvas.getContext('2d')!
+
+  for (let i = 0; i < 24; i++) {
+    const u = seededRandom(seed + i * 1.7)
+    const v = seededRandom(seed + i * 3.3)
+    const x = W * (0.12 + u * 0.76)
+    const y = H * (0.42 + v * 0.42)
+    const r = W * (0.07 + seededRandom(seed + i * 5.9) * 0.13)
+    const a = 0.42 + seededRandom(seed + i * 7.1) * 0.34
+    const g = ctx.createRadialGradient(x, y, 0, x, y, r)
+    g.addColorStop(0, `rgba(255,255,255,${a})`)
+    g.addColorStop(0.55, `rgba(250,252,255,${a * 0.55})`)
+    g.addColorStop(1, 'rgba(255,255,255,0)')
+    ctx.fillStyle = g
+    ctx.beginPath()
+    ctx.arc(x, y, r, 0, Math.PI * 2)
+    ctx.fill()
+  }
+
+  // flatten and shade the underside so they read as cumulus, not blobs
+  const shade = ctx.createLinearGradient(0, H * 0.52, 0, H)
+  shade.addColorStop(0, 'rgba(168,182,196,0)')
+  shade.addColorStop(1, 'rgba(150,166,184,0.4)')
+  ctx.globalCompositeOperation = 'source-atop'
+  ctx.fillStyle = shade
+  ctx.fillRect(0, H * 0.52, W, H * 0.48)
+  ctx.globalCompositeOperation = 'source-over'
+
+  const tex = new THREE.CanvasTexture(canvas)
+  tex.colorSpace = THREE.SRGBColorSpace
+  return tex
+}
+
+interface CloudDef {
+  pos: [number, number, number]
+  size: [number, number]
   speed: number
-}) {
-  const groupRef = useRef<THREE.Group>(null)
-  const startX = position[0]
-  const puffs = useMemo(
-    () => [
-      [0, 0, 0, 1.0],
-      [1.1, 0.12, 0.25, 0.8],
-      [-1.0, -0.05, -0.2, 0.75],
-      [0.5, 0.42, -0.12, 0.62],
-      [-0.5, 0.36, 0.2, 0.58],
-      [0.22, -0.28, 0.3, 0.5],
-    ],
-    [],
-  )
+}
 
-  const mat = useMemo(
-    () =>
-      new THREE.MeshStandardMaterial({
-        color: '#ffffff',
-        transparent: true,
-        opacity: 0.9,
-        roughness: 1,
-        emissive: '#dceaf6',
-        emissiveIntensity: 0.18,
-        depthWrite: false,
-      }),
-    [],
-  )
-
+function Cloud({ tex, def }: { tex: THREE.CanvasTexture; def: CloudDef }) {
+  const ref = useRef<THREE.Sprite>(null)
+  const startX = def.pos[0]
   useFrame(({ clock }) => {
-    if (groupRef.current) {
-      const t = clock.elapsedTime * speed
-      groupRef.current.position.x = startX + ((t % 220) - 110)
-    }
+    if (!ref.current) return
+    const t = clock.elapsedTime * def.speed
+    ref.current.position.x = startX + ((t % 320) - 160)
   })
-
   return (
-    <group ref={groupRef} position={position} scale={scale}>
-      {puffs.map((p, i) => (
-        <mesh key={i} position={[p[0], p[1], p[2]]}>
-          <sphereGeometry args={[p[3], 14, 10]} />
-          <primitive object={mat} attach="material" />
-        </mesh>
-      ))}
-    </group>
+    <sprite ref={ref} position={def.pos} scale={[def.size[0], def.size[1], 1]}>
+      <spriteMaterial map={tex} transparent opacity={0.82} depthWrite={false} fog />
+    </sprite>
   )
 }
 
 export function Clouds() {
   const low = useGraphics((s) => s.quality === 'low')
-  const clouds = useMemo(
-    () =>
-      low
-        ? [
-            { pos: [-24, 42, -120] as [number, number, number], scale: 3.2, speed: 0.12 },
-            { pos: [18, 46, -150] as [number, number, number], scale: 3.8, speed: 0.09 },
-            { pos: [0, 50, -200] as [number, number, number], scale: 4.6, speed: 0.07 },
-          ]
-        : [
-            { pos: [-24, 40, -110] as [number, number, number], scale: 3.0, speed: 0.14 },
-            { pos: [-8, 46, -140] as [number, number, number], scale: 3.8, speed: 0.1 },
-            { pos: [14, 42, -120] as [number, number, number], scale: 2.6, speed: 0.16 },
-            { pos: [30, 48, -160] as [number, number, number], scale: 4.2, speed: 0.08 },
-            { pos: [-40, 50, -190] as [number, number, number], scale: 4.6, speed: 0.07 },
-            { pos: [6, 54, -240] as [number, number, number], scale: 5.2, speed: 0.055 },
-            { pos: [46, 44, -130] as [number, number, number], scale: 2.8, speed: 0.13 },
-          ],
-    [low],
-  )
+  const texA = useMemo(() => cloudTexture(4.2), [])
+  const texB = useMemo(() => cloudTexture(17.6), [])
+
+  const defs = useMemo<CloudDef[]>(() => {
+    if (low) {
+      return [
+        { pos: [-60, 92, -300], size: [170, 58], speed: 0.7 },
+        { pos: [70, 118, -430], size: [230, 74], speed: 0.5 },
+        { pos: [10, 96, -230], size: [140, 46], speed: 0.85 },
+      ]
+    }
+    return [
+      { pos: [-90, 88, -280], size: [160, 54], speed: 0.75 },
+      { pos: [-10, 112, -400], size: [220, 70], speed: 0.5 },
+      { pos: [80, 96, -320], size: [150, 48], speed: 0.85 },
+      { pos: [150, 124, -480], size: [250, 82], speed: 0.42 },
+      { pos: [-170, 108, -420], size: [200, 64], speed: 0.55 },
+      { pos: [30, 140, -560], size: [290, 92], speed: 0.36 },
+      { pos: [190, 100, -360], size: [130, 42], speed: 0.9 },
+    ]
+  }, [low])
+
   return (
     <group>
-      {clouds.map((c, i) => (
-        <Cloud key={i} position={c.pos} scale={c.scale} speed={c.speed} />
+      {defs.map((d, i) => (
+        <Cloud key={i} tex={i % 2 === 0 ? texA : texB} def={d} />
       ))}
     </group>
   )
 }
 
 /* ------------------------------------------------------------------ */
-/*  Fine sea-spray specks drifting in the air around the boat         */
+/*  Airborne motes — pollen / dust drifting over the water             */
 /* ------------------------------------------------------------------ */
 
-export function Particles() {
+export function Motes() {
   const count = useGraphics((s) => s.settings.particleCount)
   const ref = useRef<THREE.Points>(null)
   const { positions, speeds } = useMemo(() => {
     const positions = new Float32Array(count * 3)
     const speeds = new Float32Array(count)
     for (let i = 0; i < count; i++) {
-      positions[i * 3] = (Math.random() - 0.5) * 30
-      positions[i * 3 + 1] = 0.4 + Math.random() * 5
-      positions[i * 3 + 2] = 8 - Math.random() * 60
-      speeds[i] = 0.3 + Math.random() * 0.7
+      positions[i * 3] = (Math.random() - 0.5) * 26
+      positions[i * 3 + 1] = 0.3 + Math.random() * 4.5
+      positions[i * 3 + 2] = 6 - Math.random() * 46
+      speeds[i] = 0.25 + Math.random() * 0.6
     }
     return { positions, speeds }
   }, [count])
@@ -120,8 +128,8 @@ export function Particles() {
     const arr = attr.array as Float32Array
     const t = performance.now() * 0.001
     for (let i = 0; i < count; i++) {
-      arr[i * 3] += Math.sin(t * speeds[i] + i) * 0.005
-      arr[i * 3 + 1] += Math.cos(t * speeds[i] * 0.7 + i) * 0.002
+      arr[i * 3] += Math.sin(t * speeds[i] + i) * 0.004
+      arr[i * 3 + 1] += Math.cos(t * speeds[i] * 0.7 + i) * 0.0016
     }
     attr.needsUpdate = true
   })
@@ -132,10 +140,10 @@ export function Particles() {
         <bufferAttribute attach="attributes-position" args={[positions, 3]} />
       </bufferGeometry>
       <pointsMaterial
-        size={0.045}
-        color="#eaf6ff"
+        size={0.035}
+        color="#fff1d8"
         transparent
-        opacity={0.4}
+        opacity={0.32}
         sizeAttenuation
         depthWrite={false}
       />

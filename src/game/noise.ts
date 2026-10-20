@@ -37,6 +37,22 @@ export function fbm(x: number, y: number, octaves = 4, lacunarity = 2.0, gain = 
   return sum / norm
 }
 
+/** Ridged fbm — sharp crests, ideal for mountain silhouettes and foothills. */
+export function ridged(x: number, y: number, octaves = 5, lacunarity = 2.0, gain = 0.5): number {
+  let amp = 0.5
+  let freq = 1.0
+  let sum = 0
+  let norm = 0
+  for (let i = 0; i < octaves; i++) {
+    const n = 1 - Math.abs(valueNoise2(x * freq, y * freq) * 2 - 1)
+    sum += amp * n * n
+    norm += amp
+    amp *= gain
+    freq *= lacunarity
+  }
+  return sum / norm
+}
+
 export function seededRandom(seed: number): number {
   const x = Math.sin(seed * 12.9898 + 78.233) * 43758.5453
   return x - Math.floor(x)

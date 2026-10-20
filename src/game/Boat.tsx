@@ -2,16 +2,16 @@ import { useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { useGraphics } from '../lib/graphics'
-import { oceanHeight, oceanNormal } from './oceanWaves'
+import { waterHeight, waterNormal } from './waterWaves'
 
 /**
- * A small tropical fishing boat built from primitives with PBR materials.
+ * A small wooden river boat (perahu) built from primitives with PBR materials.
  *
- * The hull, deck, gunwale, rails, a bow post and a tackle box are all visible
- * from the first-person deck camera (deck at the bottom of the frame, sea in
- * the middle, sky above). The whole boat floats on the shared Gerstner wave
- * field: it heaves, pitches and rolls naturally, and a soft wake/foam collar
- * sits at the waterline.
+ * The hull, deck, gunwale, rails, a bow post and a woven basket are all
+ * visible from the first-person deck camera (deck at the bottom of the frame,
+ * river in the middle, valley above). The whole boat floats on the shared
+ * river wave field: it heaves, pitches and rolls gently, and a soft ripple
+ * collar sits at the waterline.
  *
  * `boatRoot` is exposed via a ref-forwarded group so the camera rig can sample
  * its transform and ride along.
@@ -36,17 +36,18 @@ export function Boat({ boatRef }: { boatRef: React.RefObject<BoatRef> }) {
 
   const std = useMemo(
     () => ({
-      deck: new THREE.MeshStandardMaterial({ color: '#b98a52', roughness: 0.82, metalness: 0.03 }),
-      deckDark: new THREE.MeshStandardMaterial({ color: '#8f6636', roughness: 0.85, metalness: 0.03 }),
-      hull: new THREE.MeshStandardMaterial({ color: '#2f5d7c', roughness: 0.55, metalness: 0.05 }),
-      hullTrim: new THREE.MeshStandardMaterial({ color: '#e8e2d4', roughness: 0.6, metalness: 0.02 }),
+      deck: new THREE.MeshStandardMaterial({ color: '#a8815a', roughness: 0.86, metalness: 0.02 }),
+      deckDark: new THREE.MeshStandardMaterial({ color: '#86643f', roughness: 0.88, metalness: 0.02 }),
+      hull: new THREE.MeshStandardMaterial({ color: '#6b4f31', roughness: 0.78, metalness: 0.02 }),
+      hullTrim: new THREE.MeshStandardMaterial({ color: '#4a3520', roughness: 0.85, metalness: 0.02 }),
       wood: new THREE.MeshStandardMaterial({ color: '#7a5630', roughness: 0.8, metalness: 0.02 }),
-      metal: new THREE.MeshStandardMaterial({ color: '#cfd6dc', roughness: 0.35, metalness: 0.85 }),
+      bamboo: new THREE.MeshStandardMaterial({ color: '#9a8a52', roughness: 0.75, metalness: 0.02 }),
+      basket: new THREE.MeshStandardMaterial({ color: '#8a6f42', roughness: 0.92, metalness: 0.0 }),
       rope: new THREE.MeshStandardMaterial({ color: '#c9b483', roughness: 0.95, metalness: 0 }),
-      foam: new THREE.MeshBasicMaterial({
-        color: '#f3fbff',
+      ripple: new THREE.MeshBasicMaterial({
+        color: '#e6f0ea',
         transparent: true,
-        opacity: 0.5,
+        opacity: 0.22,
         depthWrite: false,
       }),
     }),
@@ -58,11 +59,11 @@ export function Boat({ boatRef }: { boatRef: React.RefObject<BoatRef> }) {
     const t = state.clock.elapsedTime
     const x = BOAT_X
     const z = BOAT_Z
-    const h = oceanHeight(x, z, t)
+    const h = waterHeight(x, z, t)
     group.current.position.set(x, h, z)
 
     // orientation from the surface normal (pitch/roll), almost static for comfort
-    oceanNormal(x, z, t, norm)
+    waterNormal(x, z, t, norm)
     const targetPitch = Math.atan2(norm.z, norm.y) * 0.045
     const targetRoll = -Math.atan2(norm.x, norm.y) * 0.045
     roll.current = THREE.MathUtils.lerp(roll.current, targetRoll, 0.02)
@@ -76,11 +77,11 @@ export function Boat({ boatRef }: { boatRef: React.RefObject<BoatRef> }) {
       boatRef.current.deckY = h
     }
 
-    // wake foam ring breathes at the waterline
+    // ripple collar breathes at the waterline
     if (wake.current) {
       const k = (Math.sin(t * 1.2) + 1) * 0.5
-      wake.current.scale.setScalar(1 + k * 0.06)
-      std.foam.opacity = 0.35 + k * 0.18
+      wake.current.scale.setScalar(1 + k * 0.05)
+      std.ripple.opacity = 0.16 + k * 0.1
     }
   })
 
@@ -149,10 +150,10 @@ export function Boat({ boatRef }: { boatRef: React.RefObject<BoatRef> }) {
       {/* crossbar for rod holders */}
       <mesh position={[0, 1.55, -2.3]} rotation={[0, 0, Math.PI / 2]}>
         <cylinderGeometry args={[0.035, 0.035, 0.9, 8]} />
-        <primitive object={std.metal} attach="material" />
+        <primitive object={std.bamboo} attach="material" />
       </mesh>
 
-      {/* --- Tackle box on the deck (right side) --- */}
+      {/* --- Wooden box with folded cloth (right side) --- */}
       <group position={[0.62, 0.32, 1.2]}>
         <mesh castShadow receiveShadow>
           <boxGeometry args={[0.5, 0.3, 0.4]} />
@@ -162,27 +163,31 @@ export function Boat({ boatRef }: { boatRef: React.RefObject<BoatRef> }) {
           <boxGeometry args={[0.52, 0.06, 0.42]} />
           <primitive object={std.hullTrim} attach="material" />
         </mesh>
-        <mesh position={[0, 0.22, 0]} rotation={[Math.PI / 2, 0, 0]}>
-          <torusGeometry args={[0.07, 0.014, 8, 16]} />
-          <primitive object={std.metal} attach="material" />
+        <mesh position={[0, 0.24, 0]} scale={[1, 0.5, 0.8]} castShadow>
+          <sphereGeometry args={[0.2, 10, 8]} />
+          <primitive object={std.rope} attach="material" />
         </mesh>
       </group>
 
-      {/* --- Coiled rope / bucket on the left --- */}
-      <mesh position={[-0.62, 0.3, 1.1]}>
-        <cylinderGeometry args={[0.22, 0.18, 0.26, 14, 1, true]} />
-        <primitive object={std.metal} attach="material" />
+      {/* --- Woven basket on the left --- */}
+      <mesh position={[-0.62, 0.3, 1.1]} castShadow>
+        <cylinderGeometry args={[0.22, 0.16, 0.28, 12, 1, true]} />
+        <primitive object={std.basket} attach="material" />
+      </mesh>
+      <mesh position={[-0.62, 0.44, 1.1]}>
+        <torusGeometry args={[0.22, 0.02, 6, 16]} />
+        <primitive object={std.rope} attach="material" />
       </mesh>
 
-      {/* --- Wake / foam collar at the waterline --- */}
+      {/* --- Ripple collar at the waterline --- */}
       <group ref={wake} position={[0, 0.02, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <mesh position={[0, 0, 0.4]}>
-          <ringGeometry args={[1.5, 2.6, 40]} />
-          <primitive object={std.foam} attach="material" />
+        <mesh position={[0, 0, 0.3]}>
+          <ringGeometry args={[1.3, 2.0, 40]} />
+          <primitive object={std.ripple} attach="material" />
         </mesh>
-        <mesh position={[0, 0, -2.2]}>
-          <ringGeometry args={[0.8, 1.5, 32]} />
-          <primitive object={std.foam} attach="material" />
+        <mesh position={[0, 0, -2.0]}>
+          <ringGeometry args={[0.7, 1.25, 32]} />
+          <primitive object={std.ripple} attach="material" />
         </mesh>
       </group>
     </group>

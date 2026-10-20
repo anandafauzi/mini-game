@@ -1,4 +1,4 @@
-import { Canvas, useThree } from '@react-three/fiber'
+import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { useEffect, useState } from 'react'
 import * as THREE from 'three'
 import { FishingScene } from './game/FishingScene'
@@ -36,6 +36,25 @@ function QualityBridge() {
     // force material/shadow recompilation now that quality changed
     gl.shadowMap.needsUpdate = true
   }, [quality, settings, gl])
+
+  return null
+}
+
+/**
+ * Keeps the vertical lens comfortable on every aspect ratio: a slightly
+ * tighter 54° on wide screens (less edge distortion, more presence), opening
+ * up to ~70° in portrait so the valley and the river still fit in frame.
+ */
+function ResponsiveFov() {
+  const camera = useThree((s) => s.camera) as THREE.PerspectiveCamera
+
+  useFrame((_, delta) => {
+    const a = camera.aspect
+    const goal = a > 1.2 ? 54 : a > 0.75 ? 61 : 70
+    if (Math.abs(camera.fov - goal) < 0.05) return
+    camera.fov = THREE.MathUtils.lerp(camera.fov, goal, Math.min(1, delta * 3))
+    camera.updateProjectionMatrix()
+  })
 
   return null
 }
@@ -125,11 +144,11 @@ export default function App() {
         <Canvas
           shadows={settings.shadowsEnabled}
           dpr={settings.dpr}
-          camera={{ position: [0, 1.6, 1.4], fov: 62, near: 0.1, far: 1400 }}
+          camera={{ position: [0, 1.6, 1.4], fov: 54, near: 0.1, far: 1400 }}
           gl={{
             antialias: quality !== 'low',
             toneMapping: THREE.ACESFilmicToneMapping,
-            toneMappingExposure: 1.05,
+            toneMappingExposure: 1.0,
             outputColorSpace: THREE.SRGBColorSpace,
             powerPreference: 'high-performance',
           }}
@@ -138,6 +157,7 @@ export default function App() {
           }}
         >
           <QualityBridge />
+          <ResponsiveFov />
           <FishingScene />
         </Canvas>
         <div className="pointer-events-none absolute inset-0 cinematic-grade" />

@@ -17,9 +17,9 @@ body,
 .cinematic-grade {
   background: linear-gradient(
     to bottom,
-    rgba(255, 214, 150, 0.1) 0%,
-    rgba(255, 240, 210, 0.02) 40%,
-    rgba(40, 80, 120, 0.06) 100%
+    rgba(255, 226, 178, 0.05) 0%,
+    rgba(255, 250, 235, 0.015) 45%,
+    rgba(60, 95, 110, 0.04) 100%
   );
   mix-blend-mode: soft-light;
 }
@@ -27,7 +27,7 @@ body,
 .cinematic-vignette {
   background: radial-gradient(
     ellipse at 50% 45%,
-    rgba(0, 0, 0, 0) 55%,
-    rgba(0, 0, 0, 0.28) 100%
+    rgba(0, 0, 0, 0) 58%,
+    rgba(0, 0, 0, 0.14) 100%
   );
 }
