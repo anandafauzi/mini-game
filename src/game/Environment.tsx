@@ -259,12 +259,23 @@ function ForestLine() {
 export function Environment() {
   return (
     <group>
-      <mesh position={[0, -0.02, -6]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+      {/* base terrain far below the riverbed so underwater stones stay visible */}
+      <mesh position={[0, -0.7, -6]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <planeGeometry args={[80, 80, 40, 40]} />
+        <meshStandardMaterial color="#3d5f2e" roughness={1} />
+      </mesh>
+      {/* grass banks flanking the river channel (river is x in [-8, 8]) */}
+      <mesh position={[-24, -0.02, -6]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+        <planeGeometry args={[32, 80]} />
         <meshStandardMaterial color="#4f7a3a" roughness={1} />
       </mesh>
-      <mesh position={[0, -0.015, -14]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-        <planeGeometry args={[60, 24]} />
+      <mesh position={[24, -0.02, -6]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+        <planeGeometry args={[32, 80]} />
+        <meshStandardMaterial color="#4f7a3a" roughness={1} />
+      </mesh>
+      {/* green banks behind the river (far end) */}
+      <mesh position={[0, -0.02, -40]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+        <planeGeometry args={[16.5, 46]} />
         <meshStandardMaterial color="#436b32" roughness={1} />
       </mesh>
 

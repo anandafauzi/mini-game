@@ -13,3 +13,21 @@ body,
   -webkit-user-select: none;
   touch-action: manipulation;
 }
+
+.cinematic-grade {
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 214, 150, 0.1) 0%,
+    rgba(255, 240, 210, 0.02) 40%,
+    rgba(40, 80, 120, 0.06) 100%
+  );
+  mix-blend-mode: soft-light;
+}
+
+.cinematic-vignette {
+  background: radial-gradient(
+    ellipse at 50% 45%,
+    rgba(0, 0, 0, 0) 55%,
+    rgba(0, 0, 0, 0.28) 100%
+  );
+}

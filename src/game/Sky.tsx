@@ -133,3 +133,49 @@ export function Birds() {
     </group>
   )
 }
+
+function MistLayer({
+  position,
+  width,
+  speed,
+  opacity,
+}: {
+  position: [number, number, number]
+  width: number
+  speed: number
+  opacity: number
+}) {
+  const ref = useRef<THREE.Mesh>(null)
+  const startX = position[0]
+  useFrame(({ clock }) => {
+    if (ref.current) {
+      const t = clock.elapsedTime * speed
+      ref.current.position.x = startX + ((t % 80) - 40)
+    }
+  })
+  return (
+    <mesh ref={ref} position={position} rotation={[0, 0, 0]}>
+      <planeGeometry args={[width, width * 0.34]} />
+      <meshBasicMaterial
+        color="#eaf3f7"
+        transparent
+        opacity={opacity}
+        depthWrite={false}
+        side={THREE.DoubleSide}
+        blending={THREE.AdditiveBlending}
+      />
+    </mesh>
+  )
+}
+
+/** Soft volumetric morning mist drifting across the valley / mountain base. */
+export function Mist() {
+  return (
+    <group>
+      <MistLayer position={[-6, 3.2, -40]} width={46} speed={0.25} opacity={0.1} />
+      <MistLayer position={[8, 4.0, -44]} width={52} speed={0.18} opacity={0.08} />
+      <MistLayer position={[0, 5.2, -48]} width={60} speed={0.14} opacity={0.06} />
+      <MistLayer position={[-2, 1.8, -26]} width={40} speed={0.32} opacity={0.05} />
+    </group>
+  )
+}

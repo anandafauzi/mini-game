@@ -4,9 +4,10 @@ import { Sky } from '@react-three/drei'
 import * as THREE from 'three'
 import { Environment } from './Environment'
 import { Water } from './Water'
+import { Riverbed, Rapids } from './Riverbed'
 import { Fish } from './Fish'
 import { Bobber, FishingRod, FishingLine } from './FishingRod'
-import { Clouds, Birds } from './Sky'
+import { Clouds, Birds, Mist } from './Sky'
 import { pickRandomSpecies, type FishSpecies } from '../lib/fish'
 import { useGame } from '../lib/gameState'
 import { playCastSound, playCatchSound, playSplashSound, playAlertSound } from '../lib/audio'
@@ -308,12 +309,15 @@ export function FishingScene() {
       />
       <hemisphereLight args={['#bfe3f0', '#4f7a3a', 0.55]} />
       <Sky sunPosition={[10, 8, -20]} turbidity={5} rayleigh={1.0} mieCoefficient={0.008} mieDirectionalG={0.85} />
-      <fog attach="fog" args={['#cfe6ef', 24, 70]} />
+      <fog attach="fog" args={['#d6e8f0', 22, 62]} />
 
       <Clouds />
       <Birds />
+      <Mist />
       <Environment />
+      <Riverbed />
       <Water />
+      <Rapids />
 
       <group ref={fpRig}>
         <FishingRod castProgress={castProgress} tension={tension} tipRef={rodTipRef} />

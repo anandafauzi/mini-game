@@ -70,7 +70,10 @@ export function Water() {
       float spec = pow(max(0.0, sin(shimmer * 3.14159 + uTime)), 12.0);
       color += vec3(1.0, 0.98, 0.9) * spec * 0.25;
 
-      gl_FragColor = vec4(color, 0.82);
+      // clearer near the camera, deeper tint farther away -> stones visible through water
+      float alpha = mix(0.6, 0.9, depthMix);
+      alpha = mix(alpha, 0.96, fresnel);
+      gl_FragColor = vec4(color, alpha);
     }
   `
 

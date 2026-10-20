@@ -70,9 +70,15 @@ export default function App() {
   return (
     <div className="relative h-full w-full">
       <div id="game-canvas-container" className="absolute inset-0">
-        <Canvas shadows camera={{ position: [0, 1.6, 3], fov: 60 }}>
+        <Canvas
+          shadows
+          camera={{ position: [0, 1.6, 3], fov: 62 }}
+          gl={{ antialias: true, toneMappingExposure: 1.08 }}
+        >
           <FishingScene />
         </Canvas>
+        <div className="pointer-events-none absolute inset-0 cinematic-grade" />
+        <div className="pointer-events-none absolute inset-0 cinematic-vignette" />
       </div>
 
       <Hud onPause={handlePause} />
