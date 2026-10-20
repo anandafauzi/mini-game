@@ -9,43 +9,44 @@ import { LeaderboardWidget } from './ui/Leaderboard'
 import { Hud, FishingHint } from './ui/Hud'
 import { ResultScreen } from './ui/ResultScreen'
 
-const QUESTIONS_CSV_URL = import.meta.env.VITE_QUESTIONS_CSV_URL as string | undefined
+const DEFAULT_QUESTIONS_CSV_URL =
+  'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ89t10uH61U1DFch8HSsCBWc4yzt8o19DttoGdF_B3fCWrf-GthMEnVcihVdNhXaUkJc8tZNFSsQAD/pub?output=csv'
+const QUESTIONS_CSV_URL =
+  (import.meta.env.VITE_QUESTIONS_CSV_URL as string | undefined) || DEFAULT_QUESTIONS_CSV_URL
 
 export default function App() {
   const phase = useGame((s) => s.phase)
   const setQuestions = useGame((s) => s.setQuestions)
 
   useEffect(() => {
-    if (!QUESTIONS_CSV_URL) {
-      console.warn('VITE_QUESTIONS_CSV_URL belum di-set. Pakai soal contoh.')
-      setQuestions([
-        {
-          id: 1,
-          text: 'Ikan apa yang terkenal sebagai ikan nasional Indonesia?',
-          options: { a: 'Ikan Mas', b: 'Ikan Lele', c: 'Ikan Nila', d: 'Ikan Tawes' },
-          correct: 'a',
-          value: 20,
-        },
-        {
-          id: 2,
-          text: 'Sungai terpanjang di Pulau Jawa adalah?',
-          options: { a: 'Sungai Bengawan Solo', b: 'Sungai Kapuas', c: 'Sungai Musi', d: 'Sungai Ciliwung' },
-          correct: 'a',
-          value: 20,
-        },
-        {
-          id: 3,
-          text: 'Habitat ikan gabus paling umum ditemukan di?',
-          options: { a: 'Laut dalam', b: 'Danau pegunungan', c: 'Sungai dan sawah', d: 'Karang terumbu' },
-          correct: 'c',
-          value: 20,
-        },
-      ])
-      return
-    }
     loadQuestions(QUESTIONS_CSV_URL)
       .then(setQuestions)
-      .catch((err) => console.error(err))
+      .catch((err) => {
+        console.error('Gagal memuat soal, pakai soal contoh:', err)
+        setQuestions([
+          {
+            id: 1,
+            text: 'Ikan apa yang terkenal sebagai ikan nasional Indonesia?',
+            options: { a: 'Ikan Mas', b: 'Ikan Lele', c: 'Ikan Nila', d: 'Ikan Tawes' },
+            correct: 'a',
+            value: 20,
+          },
+          {
+            id: 2,
+            text: 'Sungai terpanjang di Pulau Jawa adalah?',
+            options: { a: 'Sungai Bengawan Solo', b: 'Sungai Kapuas', c: 'Sungai Musi', d: 'Sungai Ciliwung' },
+            correct: 'a',
+            value: 20,
+          },
+          {
+            id: 3,
+            text: 'Habitat ikan gabus paling umum ditemukan di?',
+            options: { a: 'Laut dalam', b: 'Danau pegunungan', c: 'Sungai dan sawah', d: 'Karang terumbu' },
+            correct: 'c',
+            value: 20,
+          },
+        ])
+      })
   }, [setQuestions])
 
   return (
