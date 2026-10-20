@@ -1,4 +1,4 @@
-import { Canvas } from '@react-three/fiber'
+import { Canvas, useThree } from '@react-three/fiber'
 import { useEffect, useState } from 'react'
 import * as THREE from 'three'
 import { FishingScene } from './game/FishingScene'
@@ -20,6 +20,25 @@ const DEFAULT_QUESTIONS_CSV_URL =
   'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ89t10uH61U1DFch8HSsCBWc4yzt8o19DttoGdF_B3fCWrf-GthMEnVcihVdNhXaUkJc8tZNFSsQAD/pub?output=csv'
 const QUESTIONS_CSV_URL =
   (import.meta.env.VITE_QUESTIONS_CSV_URL as string | undefined) || DEFAULT_QUESTIONS_CSV_URL
+
+/**
+ * Applies graphics-quality changes to the live renderer without remounting the
+ * scene, so switching quality mid-game no longer resets fishing state.
+ */
+function QualityBridge() {
+  const quality = useGraphics((s) => s.quality)
+  const settings = useGraphics((s) => s.settings)
+  const gl = useThree((s) => s.gl)
+
+  useEffect(() => {
+    gl.setPixelRatio(Math.min(window.devicePixelRatio, settings.dpr[1]))
+    gl.shadowMap.enabled = settings.shadowsEnabled
+    // force material/shadow recompilation now that quality changed
+    gl.shadowMap.needsUpdate = true
+  }, [quality, settings, gl])
+
+  return null
+}
 
 export default function App() {
   const phase = useGame((s) => s.phase)
@@ -104,7 +123,6 @@ export default function App() {
     <div className="relative h-full w-full">
       <div id="game-canvas-container" className="absolute inset-0">
         <Canvas
-          key={quality}
           shadows={settings.shadowsEnabled}
           dpr={settings.dpr}
           camera={{ position: [0, 1.6, 1.4], fov: 62, near: 0.1, far: 1400 }}
@@ -119,6 +137,7 @@ export default function App() {
             gl.shadowMap.type = THREE.PCFSoftShadowMap
           }}
         >
+          <QualityBridge />
           <FishingScene />
         </Canvas>
         <div className="pointer-events-none absolute inset-0 cinematic-grade" />

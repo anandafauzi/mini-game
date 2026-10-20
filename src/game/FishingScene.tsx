@@ -23,11 +23,55 @@ type FishingState = 'idle' | 'casting' | 'waiting' | 'approaching' | 'bite' | 'r
 const BOBBER_REST: [number, number, number] = [0.2, 0, -7]
 const CAST_TARGET: [number, number, number] = [0.6, 0, -10.5]
 
+/**
+ * Bobber that floats on the animated sea surface.
+ *
+ * The bobber's horizontal position comes from game state, but its vertical
+ * position is driven every frame from the shared wave field so it rides the
+ * swell smoothly (no render-time sampling / desync). Its live world position
+ * is published into `posRef` so the line, ripple and splash can follow it.
+ */
+function FloatingBobber({
+  xz,
+  dip,
+  posRef,
+}: {
+  xz: [number, number]
+  dip: number
+  posRef: React.MutableRefObject<THREE.Vector3>
+}) {
+  const groupRef = useRef<THREE.Group>(null)
+  const smoothY = useRef(oceanHeight(xz[0], xz[1], 0))
+  useFrame((state) => {
+    const t = state.clock.elapsedTime
+    const target = oceanHeight(xz[0], xz[1], t)
+    smoothY.current = THREE.MathUtils.lerp(smoothY.current, target, 0.2)
+    const y = smoothY.current - dip
+    if (groupRef.current) groupRef.current.position.set(xz[0], y, xz[1])
+    posRef.current.set(xz[0], y, xz[1])
+  })
+  return (
+    <group ref={groupRef}>
+      <Bobber position={[0, 0, 0]} dip={0} />
+    </group>
+  )
+}
+
 /** Expanding ripple rings on the sea surface around the bobber. */
-function Ripple({ position, active }: { position: [number, number, number]; active: boolean }) {
+function Ripple({
+  xz,
+  yRef,
+  active,
+}: {
+  xz: [number, number]
+  yRef: React.MutableRefObject<THREE.Vector3>
+  active: boolean
+}) {
   const refs = useRef<(THREE.Mesh | null)[]>([])
+  const groupRef = useRef<THREE.Group>(null)
   useFrame(({ clock }) => {
     const t = clock.elapsedTime
+    if (groupRef.current) groupRef.current.position.set(xz[0], yRef.current.y + 0.04, xz[1])
     refs.current.forEach((m, i) => {
       if (!m) return
       const p = (t * (active ? 0.9 : 0.5) + i * 0.5) % 1.5
@@ -38,7 +82,7 @@ function Ripple({ position, active }: { position: [number, number, number]; acti
     })
   })
   return (
-    <group position={[position[0], position[1] + 0.04, position[2]]} rotation={[-Math.PI / 2, 0, 0]}>
+    <group ref={groupRef} rotation={[-Math.PI / 2, 0, 0]}>
       {[0, 1, 2].map((i) => (
         <mesh
           key={i}
@@ -85,6 +129,8 @@ export function FishingScene() {
   const fpRig = useRef<THREE.Group>(null)
   const rodTipRef = useRef<THREE.Object3D>(null)
   const boatRef = useRef<BoatRef>({ group: null, deckY: 0 })
+  const bobberLiveRef = useRef(new THREE.Vector3(0, 0, -7))
+  const nullRef = useRef<THREE.Vector3 | null>(null)
 
   // Camera look-around state
   const lookYaw = useRef(0)
@@ -406,15 +452,7 @@ export function FishingScene() {
   const fishVisible = state === 'waiting' || state === 'approaching' || state === 'bite' || state === 'reeling' || state === 'escaped' || state === 'caught'
   const displaySpecies = state === 'caught' ? caughtFishInfo?.fish ?? activeFish : activeFish
   const displayScale = state === 'caught' ? caughtFishInfo?.sizeScale ?? 1 : 1
-
-  // Keep the bobber floating on the animated sea surface.
-  const floats = bobberPos
-    ? ([bobberPos[0], oceanHeight(bobberPos[0], bobberPos[2], performance.now() * 0.001), bobberPos[2]] as [
-        number,
-        number,
-        number,
-      ])
-    : null
+  const liveBobber = bobberLiveRef.current
 
   return (
     <>
@@ -431,8 +469,8 @@ export function FishingScene() {
       <Boat boatRef={boatRef} />
 
       {/* Splash burst when fish is hooked / cast lands */}
-      {splash > 0 && floats && (
-        <mesh position={[floats[0], floats[1] + 0.05, floats[2]]} rotation={[-Math.PI / 2, 0, 0]}>
+      {splash > 0 && bobberPos && (
+        <mesh position={[bobberPos[0], liveBobber.y + 0.05, bobberPos[2]]} rotation={[-Math.PI / 2, 0, 0]}>
           <ringGeometry args={[0.1, 0.1 + splash * 0.7, 28]} />
           <meshBasicMaterial color="#f2fbff" transparent opacity={splash * 0.7} depthWrite={false} />
         </mesh>
@@ -457,9 +495,17 @@ export function FishingScene() {
           </group>
         )}
       </group>
-      <FishingLine tipRef={rodTipRef} bobberPos={floats} />
-      {floats && <Bobber position={floats} dip={bobberDip} />}
-      {floats && <Ripple position={floats} active={state === 'bite' || bobberDip > 0.05} />}
+      <FishingLine tipRef={rodTipRef} bobberRef={bobberPos ? bobberLiveRef : nullRef} />
+      {bobberPos && (
+        <FloatingBobber xz={[bobberPos[0], bobberPos[2]]} dip={bobberDip} posRef={bobberLiveRef} />
+      )}
+      {bobberPos && (
+        <Ripple
+          xz={[bobberPos[0], bobberPos[2]]}
+          yRef={bobberLiveRef}
+          active={state === 'bite' || bobberDip > 0.05}
+        />
+      )}
 
       {displaySpecies && (
         <Fish
@@ -471,8 +517,8 @@ export function FishingScene() {
         />
       )}
 
-      {state === 'bite' && floats && (
-        <mesh position={[CAST_TARGET[0], floats[1] + 1.2, CAST_TARGET[2]]}>
+      {state === 'bite' && bobberPos && (
+        <mesh position={[CAST_TARGET[0], liveBobber.y + 1.2, CAST_TARGET[2]]}>
           <ringGeometry args={[0.35 + Math.sin(biteFlash) * 0.05, 0.45 + Math.sin(biteFlash) * 0.05, 32]} />
           <meshBasicMaterial color="#fbbf24" transparent opacity={0.85} side={THREE.DoubleSide} />
         </mesh>

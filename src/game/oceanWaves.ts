@@ -49,14 +49,6 @@ export function oceanNormal(x: number, z: number, time: number, out: THREE.Vecto
   return out.set(hL - hR, 2 * e, hD - hU).normalize()
 }
 
-/** Approximate the surface normal's sea-state steepness (0 calm .. 1 choppy). */
-export function oceanSlope(x: number, z: number, time: number): number {
-  const e = 0.5
-  const dx = oceanHeight(x + e, z, time) - oceanHeight(x - e, z, time)
-  const dz = oceanHeight(x, z + e, time) - oceanHeight(x, z - e, time)
-  return Math.min(1, Math.hypot(dx, dz) / (2 * e))
-}
-
 /** GLSL body for the shared wave sum — kept textually identical to the CPU version. */
 export const GLSL_WAVES = `
 float oceanWaveHeight(vec2 p, float t) {

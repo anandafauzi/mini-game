@@ -50,7 +50,7 @@ function Island({
   size: number
   seedVal: number
 }) {
-  const seg = useGraphics((s) => s.settings.terrainSegments)
+  const seg = useGraphics((s) => (s.quality === 'low' ? 24 : s.quality === 'medium' ? 40 : 56))
   const geometry = useMemo(() => makeIslandGeometry(size, seedVal, seg), [size, seedVal, seg])
   // a couple of palm silhouettes on top
   const palms = useMemo(() => {

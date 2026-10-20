@@ -120,10 +120,10 @@ export function FishingRod({ castProgress, tension, tipRef }: FishingRodProps) {
 
 export function FishingLine({
   tipRef,
-  bobberPos,
+  bobberRef,
 }: {
   tipRef: React.RefObject<THREE.Object3D | null>
-  bobberPos: [number, number, number] | null
+  bobberRef: React.RefObject<THREE.Vector3 | null>
 }) {
   const lineObj = useMemo(() => {
     const geo = new THREE.BufferGeometry()
@@ -143,10 +143,11 @@ export function FishingLine({
       arr[1] = tipWorld.y
       arr[2] = tipWorld.z
     }
-    if (bobberPos) {
-      arr[3] = bobberPos[0]
-      arr[4] = bobberPos[1] + 0.05
-      arr[5] = bobberPos[2]
+    const b = bobberRef.current
+    if (b) {
+      arr[3] = b.x
+      arr[4] = b.y + 0.05
+      arr[5] = b.z
     } else {
       arr[3] = arr[0] + 0.1
       arr[4] = arr[1] - 2.5

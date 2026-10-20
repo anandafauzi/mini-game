@@ -112,7 +112,6 @@ export function Ocean() {
       vec3 N = normalize(vNormal);
 
       float dist = length(uCameraPos.xz - vWorldPos.xz);
-      float camH = max(0.2, uCameraPos.y);
 
       // view/depth-based colour: turquoise near the boat, deep blue, hazy horizon
       float depthMix = smoothstep(4.0, 220.0, dist);
