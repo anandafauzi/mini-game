@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { useFrame, useThree, useThree as useR3F } from '@react-three/fiber'
+import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
-import { Environment } from './Terrain'
-import { Water } from './Water'
-import { Riverbed, Rapids } from './Riverbed'
+import { Ocean } from './Ocean'
+import { Boat, type BoatRef } from './Boat'
+import { Islands, SeaBirds, SeaHaze } from './Islands'
 import { Fish } from './Fish'
 import { Bobber, FishingRod, FishingLine } from './FishingRod'
-import { Clouds, Birds, Mist, Particles } from './Sky'
+import { Clouds, Particles } from './Sky'
 import { DayNight } from './DayNight'
 import { pickRandomSpecies, type FishSpecies } from '../lib/fish'
 import { useGame } from '../lib/gameState'
@@ -15,28 +15,30 @@ import { useTime } from '../lib/timeOfDay'
 import { playerInput, initKeyboard, combineInput } from '../lib/playerInput'
 import { playCastSound, playCatchSound, playSplashSound, playAlertSound, startReelLoop, stopReelLoop } from '../lib/audio'
 import { emitFishingState } from '../lib/useFishingAction'
+import { oceanHeight } from './oceanWaves'
 
 type FishingState = 'idle' | 'casting' | 'waiting' | 'approaching' | 'bite' | 'reeling' | 'caught' | 'escaped'
 
-const BOBBER_REST: [number, number, number] = [0, 0.05, -4]
-const CAST_TARGET: [number, number, number] = [0.4, 0.05, -5.5]
+// Cast lands in the sea ahead of the boat.
+const BOBBER_REST: [number, number, number] = [0.2, 0, -7]
+const CAST_TARGET: [number, number, number] = [0.6, 0, -10.5]
 
-/** Expanding ripple rings on the water surface around the bobber. */
+/** Expanding ripple rings on the sea surface around the bobber. */
 function Ripple({ position, active }: { position: [number, number, number]; active: boolean }) {
   const refs = useRef<(THREE.Mesh | null)[]>([])
   useFrame(({ clock }) => {
     const t = clock.elapsedTime
     refs.current.forEach((m, i) => {
       if (!m) return
-      const phase = (t * (active ? 0.9 : 0.5) + i * 0.5) % 1.5
-      const k = phase / 1.5
+      const p = (t * (active ? 0.9 : 0.5) + i * 0.5) % 1.5
+      const k = p / 1.5
       m.scale.setScalar(0.15 + k * 1.1)
       const mat = m.material as THREE.MeshBasicMaterial
       mat.opacity = (1 - k) * (active ? 0.5 : 0.28)
     })
   })
   return (
-    <group position={[position[0], 0.025, position[2]]} rotation={[-Math.PI / 2, 0, 0]}>
+    <group position={[position[0], position[1] + 0.04, position[2]]} rotation={[-Math.PI / 2, 0, 0]}>
       {[0, 1, 2].map((i) => (
         <mesh
           key={i}
@@ -64,10 +66,11 @@ export function FishingScene() {
   const [bobberPos, setBobberPos] = useState<[number, number, number] | null>(null)
   const [bobberDip, setBobberDip] = useState(0)
   const [activeFish, setActiveFish] = useState<FishSpecies | null>(null)
-  const [fishPos, setFishPos] = useState<[number, number, number]>([2, -0.4, -7])
+  const [fishPos, setFishPos] = useState<[number, number, number]>([2, -0.6, -12])
   const [tension, setTension] = useState(0)
   const [reelProgress, setReelProgress] = useState(0)
   const [biteFlash, setBiteFlash] = useState(0)
+  const [splash, setSplash] = useState(0)
 
   useEffect(() => {
     emitFishingState(state)
@@ -79,9 +82,9 @@ export function FishingScene() {
   const reelDirRef = useRef(1)
   const escapeTimer = useRef<number | null>(null)
   const { camera } = useThree()
-  const { gl } = useR3F()
   const fpRig = useRef<THREE.Group>(null)
   const rodTipRef = useRef<THREE.Object3D>(null)
+  const boatRef = useRef<BoatRef>({ group: null, deckY: 0 })
 
   // Camera look-around state
   const lookYaw = useRef(0)
@@ -89,8 +92,9 @@ export function FishingScene() {
   const dragging = useRef(false)
   const lastPointer = useRef({ x: 0, y: 0 })
   const pointerLocked = useRef(false)
-  const playerPos = useRef(new THREE.Vector3(0, 0, 3.5))
+  const playerPos = useRef(new THREE.Vector3(0, 0, 0))
   const clockAccum = useRef(0)
+  const camBobT = useRef(0)
 
   const startCast = useCallback(() => {
     if (state !== 'idle' || phase !== 'fishing') return
@@ -107,6 +111,7 @@ export function FishingScene() {
   const hookFish = useCallback(() => {
     if (state !== 'bite') return
     playSplashSound()
+    setSplash(1)
     setState('reeling')
     setReelProgress(0)
     reelValueRef.current = 0
@@ -128,16 +133,20 @@ export function FishingScene() {
   useFrame((_, delta) => {
     if (phase !== 'fishing' && phase !== 'catch') return
 
+    const t = performance.now() * 0.001
+    if (splash > 0) setSplash((s) => Math.max(0, s - delta * 1.6))
+
     if (state === 'casting' && castProgress !== null) {
       const next = Math.min(1, castProgress + delta * 1.4)
       setCastProgress(next)
       setBobberPos([
         THREE.MathUtils.lerp(0, CAST_TARGET[0], next),
-        THREE.MathUtils.lerp(1.2, CAST_TARGET[1], Math.sin(next * Math.PI) * 0.6 + next * 0.4),
-        THREE.MathUtils.lerp(1, CAST_TARGET[2], next),
+        THREE.MathUtils.lerp(1.4, CAST_TARGET[1], Math.sin(next * Math.PI) * 0.6 + next * 0.4),
+        THREE.MathUtils.lerp(-4, CAST_TARGET[2], next),
       ])
       if (next >= 1) {
         playSplashSound()
+        setSplash(1)
         setState('waiting')
         setBobberPos(BOBBER_REST)
         if (escapeTimer.current) window.clearTimeout(escapeTimer.current)
@@ -149,12 +158,12 @@ export function FishingScene() {
     }
 
     if (state === 'waiting') {
-      setBobberDip(Math.sin(performance.now() * 0.002) * 0.015)
+      setBobberDip(Math.sin(t * 2) * 0.015)
       if (activeFish) {
         setFishPos((p) => [
           THREE.MathUtils.lerp(p[0], CAST_TARGET[0], delta * 0.4),
-          -0.45,
-          THREE.MathUtils.lerp(p[2], CAST_TARGET[2] + 0.8, delta * 0.4),
+          -0.75,
+          THREE.MathUtils.lerp(p[2], CAST_TARGET[2] + 1.2, delta * 0.4),
         ])
       }
     }
@@ -162,7 +171,7 @@ export function FishingScene() {
     if (state === 'approaching') {
       setFishPos((p) => [
         THREE.MathUtils.lerp(p[0], CAST_TARGET[0], delta * 2),
-        THREE.MathUtils.lerp(p[1], -0.15, delta * 2),
+        THREE.MathUtils.lerp(p[1], -0.3, delta * 2),
         THREE.MathUtils.lerp(p[2], CAST_TARGET[2], delta * 2),
       ])
       if (Math.abs(fishPos[0] - CAST_TARGET[0]) < 0.15 && Math.abs(fishPos[2] - CAST_TARGET[2]) < 0.3) {
@@ -182,7 +191,7 @@ export function FishingScene() {
     }
 
     if (state === 'bite') {
-      const jitter = Math.sin(performance.now() * 0.03) * 0.04
+      const jitter = Math.sin(t * 30) * 0.04
       setBobberDip(0.12 + jitter)
       setBiteFlash((f) => (f + delta * 4) % (Math.PI * 2))
     }
@@ -201,11 +210,11 @@ export function FishingScene() {
         reelDirRef.current = 1
       }
       setReelProgress(reelValueRef.current)
-      setTension(0.5 + Math.sin(performance.now() * 0.01) * 0.3)
+      setTension(0.5 + Math.sin(t * 10) * 0.3)
       setFishPos((p) => [
         THREE.MathUtils.lerp(p[0], CAST_TARGET[0], delta * 3),
-        THREE.MathUtils.lerp(p[1], 0, delta * 1.5),
-        THREE.MathUtils.lerp(p[2], CAST_TARGET[2] + 1.2, delta * 1.2),
+        THREE.MathUtils.lerp(p[1], -0.1, delta * 1.5),
+        THREE.MathUtils.lerp(p[2], CAST_TARGET[2] + 1.4, delta * 1.2),
       ])
     }
 
@@ -214,8 +223,8 @@ export function FishingScene() {
       setTension(0)
       setFishPos((p) => [
         THREE.MathUtils.lerp(p[0], 4, delta * 2),
-        THREE.MathUtils.lerp(p[1], -0.5, delta * 2),
-        THREE.MathUtils.lerp(p[2], -9, delta * 2),
+        THREE.MathUtils.lerp(p[1], -0.9, delta * 2),
+        THREE.MathUtils.lerp(p[2], -14, delta * 2),
       ])
     }
 
@@ -224,8 +233,8 @@ export function FishingScene() {
       setTension(0)
       setFishPos((p) => [
         THREE.MathUtils.lerp(p[0], 0.35, delta * 3),
-        THREE.MathUtils.lerp(p[1], 1.35 + Math.sin(performance.now() * 0.004) * 0.06, delta * 3),
-        THREE.MathUtils.lerp(p[2], -2.1, delta * 3),
+        THREE.MathUtils.lerp(p[1], 1.6 + Math.sin(t * 4) * 0.06, delta * 3),
+        THREE.MathUtils.lerp(p[2], -2.6, delta * 3),
       ])
     }
   })
@@ -269,7 +278,6 @@ export function FishingScene() {
     else if (state === 'reeling') handleReelClick()
   }, [state, startCast, hookFish, handleReelClick])
 
-  // Expose action to UI button (only while fishing)
   useEffect(() => {
     if (phase !== 'fishing') return
     const handler = () => handleAction()
@@ -291,7 +299,8 @@ export function FishingScene() {
 
   // Camera look-around: pointer-lock on desktop, drag on touch
   useEffect(() => {
-    const canvas = gl.domElement
+    const canvas = document.querySelector('canvas') as HTMLCanvasElement
+    if (!canvas) return
     const onPointerDown = (e: PointerEvent) => {
       const target = e.target as HTMLElement
       if (target.closest('[data-ui]')) return
@@ -302,21 +311,21 @@ export function FishingScene() {
       lastPointer.current = { x: e.clientX, y: e.clientY }
     }
     const onPointerMove = (e: PointerEvent) => {
-      if (pointerLocked.current) return // handled by mouse-lock move
+      if (pointerLocked.current) return
       if (!dragging.current) return
       const dx = e.clientX - lastPointer.current.x
       const dy = e.clientY - lastPointer.current.y
       lastPointer.current = { x: e.clientX, y: e.clientY }
-      lookYaw.current = THREE.MathUtils.clamp(lookYaw.current - dx * 0.004, -1.55, 1.55)
-      lookPitch.current = THREE.MathUtils.clamp(lookPitch.current - dy * 0.003, -0.6, 0.7)
+      lookYaw.current = THREE.MathUtils.clamp(lookYaw.current - dx * 0.004, -1.5, 1.5)
+      lookPitch.current = THREE.MathUtils.clamp(lookPitch.current - dy * 0.003, -0.5, 0.6)
     }
     const onPointerUp = () => {
       dragging.current = false
     }
     const onMouseMove = (e: MouseEvent) => {
       if (!pointerLocked.current) return
-      lookYaw.current = THREE.MathUtils.clamp(lookYaw.current - e.movementX * 0.0022, -1.55, 1.55)
-      lookPitch.current = THREE.MathUtils.clamp(lookPitch.current - e.movementY * 0.002, -0.6, 0.7)
+      lookYaw.current = THREE.MathUtils.clamp(lookYaw.current - e.movementX * 0.0022, -1.5, 1.5)
+      lookPitch.current = THREE.MathUtils.clamp(lookPitch.current - e.movementY * 0.002, -0.5, 0.6)
     }
     const onLockChange = () => {
       pointerLocked.current = document.pointerLockElement === canvas
@@ -334,52 +343,60 @@ export function FishingScene() {
       window.removeEventListener('mousemove', onMouseMove)
       document.removeEventListener('pointerlockchange', onLockChange)
     }
-  }, [gl])
+  }, [])
 
-  // keyboard movement init
   useEffect(() => {
     const cleanup = initKeyboard()
     return () => cleanup()
   }, [])
 
   useFrame((_, delta) => {
-    // advance the in-game clock (throttled to ~5 updates/sec to limit re-renders)
     clockAccum.current += delta
     if (clockAccum.current >= 0.2) {
       useTime.getState().tick(clockAccum.current)
       clockAccum.current = 0
     }
 
-    // merge keyboard + joystick movement
     combineInput()
 
-    // apply accumulated mouse-look
     if (playerInput.look.yaw !== 0 || playerInput.look.pitch !== 0) {
-      lookYaw.current = THREE.MathUtils.clamp(lookYaw.current - playerInput.look.yaw, -1.55, 1.55)
-      lookPitch.current = THREE.MathUtils.clamp(lookPitch.current - playerInput.look.pitch, -0.6, 0.7)
+      lookYaw.current = THREE.MathUtils.clamp(lookYaw.current - playerInput.look.yaw, -1.5, 1.5)
+      lookPitch.current = THREE.MathUtils.clamp(lookPitch.current - playerInput.look.pitch, -0.5, 0.6)
       playerInput.look.yaw = 0
       playerInput.look.pitch = 0
     }
 
-    // player movement on the riverbank (WASD + joystick)
-    const speed = 3.2 * delta
+    // Player walks a little around the deck (small area, stays aboard)
+    const speed = 1.6 * delta
     const fwd = new THREE.Vector3(-Math.sin(lookYaw.current), 0, -Math.cos(lookYaw.current))
     const right = new THREE.Vector3(Math.cos(lookYaw.current), 0, -Math.sin(lookYaw.current))
     playerPos.current.addScaledVector(fwd, playerInput.move.y * speed)
     playerPos.current.addScaledVector(right, playerInput.move.x * speed)
-    // keep the angler on the near bank, facing the river
-    playerPos.current.x = THREE.MathUtils.clamp(playerPos.current.x, -6.5, 6.5)
-    playerPos.current.z = THREE.MathUtils.clamp(playerPos.current.z, 2.2, 5.5)
+    playerPos.current.x = THREE.MathUtils.clamp(playerPos.current.x, -0.5, 0.5)
+    playerPos.current.z = THREE.MathUtils.clamp(playerPos.current.z, -0.8, 0.9)
 
-    // Smoothly move camera according to drag look-around
+    const deckY = boatRef.current.deckY
+    const t = performance.now() * 0.001
+    // gentle boat-driven camera bob (heave), kept subtle to avoid nausea
+    camBobT.current += delta
+    const heave = oceanHeight(0, 0, t) * 0.5 + Math.sin(camBobT.current * 1.2) * 0.03
+
     const targetRotY = lookYaw.current
-    const targetRotX = -0.12 + lookPitch.current
-    camera.rotation.y = THREE.MathUtils.lerp(camera.rotation.y, targetRotY, 0.12)
-    camera.rotation.x = THREE.MathUtils.lerp(camera.rotation.x, targetRotX, 0.12)
-    camera.position.x = THREE.MathUtils.lerp(camera.position.x, playerPos.current.x, 0.18)
-    camera.position.z = THREE.MathUtils.lerp(camera.position.z, playerPos.current.z, 0.18)
-    camera.position.y = THREE.MathUtils.lerp(camera.position.y, 1.6 + Math.sin(performance.now() * 0.0005) * 0.03, 0.05)
+    const targetRotX = -0.14 + lookPitch.current
+    camera.rotation.y = THREE.MathUtils.lerp(camera.rotation.y, targetRotY, 0.1)
+    camera.rotation.x = THREE.MathUtils.lerp(camera.rotation.x, targetRotX, 0.1)
 
+    const bx = boatRef.current.group?.position.x ?? 0
+    const bz = boatRef.current.group?.position.z ?? -1.6
+    const camX = bx + playerPos.current.x
+    const camZ = bz + playerPos.current.z
+    camera.position.x = THREE.MathUtils.lerp(camera.position.x, camX, 0.15)
+    camera.position.z = THREE.MathUtils.lerp(camera.position.z, camZ, 0.15)
+    camera.position.y = THREE.MathUtils.lerp(camera.position.y, deckY + 1.35 + heave * 0.4, 0.08)
+    // subtle roll following the boat
+    camera.rotation.z = THREE.MathUtils.lerp(camera.rotation.z, (boatRef.current.group?.rotation.z ?? 0) * 0.35, 0.06)
+
+    // make the rod rig follow the camera so the first-person framing is preserved
     if (fpRig.current) {
       fpRig.current.position.copy(camera.position)
       fpRig.current.quaternion.copy(camera.quaternion)
@@ -390,19 +407,36 @@ export function FishingScene() {
   const displaySpecies = state === 'caught' ? caughtFishInfo?.fish ?? activeFish : activeFish
   const displayScale = state === 'caught' ? caughtFishInfo?.sizeScale ?? 1 : 1
 
+  // Keep the bobber floating on the animated sea surface.
+  const floats = bobberPos
+    ? ([bobberPos[0], oceanHeight(bobberPos[0], bobberPos[2], performance.now() * 0.001), bobberPos[2]] as [
+        number,
+        number,
+        number,
+      ])
+    : null
+
   return (
     <>
       <DayNight />
-      <fog attach="fog" args={['#cfe2ee', 30, 110]} />
+      <fog attach="fog" args={['#cfe3f0', 140, 1100]} />
 
       <Clouds />
-      <Birds />
-      <Mist />
+      <SeaHaze />
+      <Islands />
+      <SeaBirds />
       <Particles />
-      <Environment />
-      <Riverbed />
-      <Water />
-      <Rapids />
+
+      <Ocean />
+      <Boat boatRef={boatRef} />
+
+      {/* Splash burst when fish is hooked / cast lands */}
+      {splash > 0 && floats && (
+        <mesh position={[floats[0], floats[1] + 0.05, floats[2]]} rotation={[-Math.PI / 2, 0, 0]}>
+          <ringGeometry args={[0.1, 0.1 + splash * 0.7, 28]} />
+          <meshBasicMaterial color="#f2fbff" transparent opacity={splash * 0.7} depthWrite={false} />
+        </mesh>
+      )}
 
       <group ref={fpRig}>
         <FishingRod castProgress={castProgress} tension={tension} tipRef={rodTipRef} />
@@ -423,9 +457,9 @@ export function FishingScene() {
           </group>
         )}
       </group>
-      <FishingLine tipRef={rodTipRef} bobberPos={bobberPos} />
-      {bobberPos && <Bobber position={bobberPos} dip={bobberDip} />}
-      {bobberPos && <Ripple position={bobberPos} active={state === 'bite' || bobberDip > 0.05} />}
+      <FishingLine tipRef={rodTipRef} bobberPos={floats} />
+      {floats && <Bobber position={floats} dip={bobberDip} />}
+      {floats && <Ripple position={floats} active={state === 'bite' || bobberDip > 0.05} />}
 
       {displaySpecies && (
         <Fish
@@ -437,8 +471,8 @@ export function FishingScene() {
         />
       )}
 
-      {state === 'bite' && (
-        <mesh position={[CAST_TARGET[0], 0.9, CAST_TARGET[2]]}>
+      {state === 'bite' && floats && (
+        <mesh position={[CAST_TARGET[0], floats[1] + 1.2, CAST_TARGET[2]]}>
           <ringGeometry args={[0.35 + Math.sin(biteFlash) * 0.05, 0.45 + Math.sin(biteFlash) * 0.05, 32]} />
           <meshBasicMaterial color="#fbbf24" transparent opacity={0.85} side={THREE.DoubleSide} />
         </mesh>

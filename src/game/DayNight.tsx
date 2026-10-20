@@ -17,20 +17,20 @@ interface Preset {
 
 const PRESETS: Record<string, Preset> = {
   pagi: {
-    sun: '#ffd9a0', ambient: 0.5, dirIntensity: 1.3, hemi: 0.5,
-    fogColor: '#d9ecf5', skyTurbidity: 6, skyRayleigh: 1.2,
+    sun: '#ffe0b0', ambient: 0.62, dirIntensity: 1.7, hemi: 0.75,
+    fogColor: '#cfe6f2', skyTurbidity: 5, skyRayleigh: 1.3,
   },
   siang: {
-    sun: '#fff4e6', ambient: 0.65, dirIntensity: 1.8, hemi: 0.6,
-    fogColor: '#dcecf7', skyTurbidity: 4, skyRayleigh: 0.8,
+    sun: '#fff6e8', ambient: 0.78, dirIntensity: 2.15, hemi: 0.9,
+    fogColor: '#d3e9f6', skyTurbidity: 3.2, skyRayleigh: 0.7,
   },
   sore: {
-    sun: '#ffb066', ambient: 0.5, dirIntensity: 1.4, hemi: 0.5,
-    fogColor: '#f0d9c2', skyTurbidity: 8, skyRayleigh: 2.2,
+    sun: '#ffb877', ambient: 0.6, dirIntensity: 1.6, hemi: 0.7,
+    fogColor: '#ecd9c4', skyTurbidity: 7.5, skyRayleigh: 2.2,
   },
   malam: {
-    sun: '#9fb6e0', ambient: 0.28, dirIntensity: 0.45, hemi: 0.3,
-    fogColor: '#2a3a55', skyTurbidity: 10, skyRayleigh: 0.4,
+    sun: '#a9bfe6', ambient: 0.36, dirIntensity: 0.5, hemi: 0.42,
+    fogColor: '#31465f', skyTurbidity: 9, skyRayleigh: 0.5,
   },
 }
 
@@ -81,7 +81,7 @@ export function DayNight() {
   return (
     <>
       <ambientLight ref={ambientRef} intensity={0.6} />
-      <hemisphereLight ref={hemiRef} args={['#cfeaf5', '#5a7a3e', 0.6]} />
+      <hemisphereLight ref={hemiRef} args={['#cfeaf5', '#2f6f96', 0.9]} />
       <directionalLight
         ref={dirRef}
         position={sunPos}

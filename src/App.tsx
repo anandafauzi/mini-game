@@ -107,7 +107,7 @@ export default function App() {
           key={quality}
           shadows={settings.shadowsEnabled}
           dpr={settings.dpr}
-          camera={{ position: [0, 1.6, 3], fov: 62, near: 0.1, far: 400 }}
+          camera={{ position: [0, 1.6, 1.4], fov: 62, near: 0.1, far: 1400 }}
           gl={{
             antialias: quality !== 'low',
             toneMapping: THREE.ACESFilmicToneMapping,
