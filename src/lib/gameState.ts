@@ -41,6 +41,7 @@ interface GameState {
   totalPlayTimeMs: number
   gameStartedAt: number
   reelAttemptsLeft: number
+  fishCaughtCount: number
 
   setPlayerName: (name: string) => void
   setQuestions: (questions: Question[]) => void
@@ -79,6 +80,7 @@ export const useGame = create<GameState>((set, get) => ({
   totalPlayTimeMs: 0,
   gameStartedAt: 0,
   reelAttemptsLeft: MAX_REEL_ATTEMPTS,
+  fishCaughtCount: 0,
 
   setPlayerName: (name) => set({ playerName: name }),
   setQuestions: (questions) => set({ questions }),
@@ -95,12 +97,14 @@ export const useGame = create<GameState>((set, get) => ({
       gameStartedAt: Date.now(),
       totalPlayTimeMs: 0,
       reelAttemptsLeft: MAX_REEL_ATTEMPTS,
+      fishCaughtCount: 0,
     }),
 
   onFishCaught: (fish, info) =>
-    set({
+    set((s) => ({
       phase: 'catch',
       caughtFish: fish,
+      fishCaughtCount: s.fishCaughtCount + 1,
       caughtFishInfo: {
         fish,
         sizeScale: info.sizeScale,
@@ -108,7 +112,7 @@ export const useGame = create<GameState>((set, get) => ({
         bonus: Math.round(fish.bonus * info.sizeScale),
       },
       quizStartedAt: 0,
-    }),
+    })),
 
   proceedToQuiz: () =>
     set({

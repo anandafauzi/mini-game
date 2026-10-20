@@ -5,7 +5,7 @@ import * as THREE from 'three'
 import { Environment } from './Environment'
 import { Water } from './Water'
 import { Fish } from './Fish'
-import { Bobber, FishingRod } from './FishingRod'
+import { Bobber, FishingRod, FishingLine } from './FishingRod'
 import { Clouds, Birds } from './Sky'
 import { pickRandomSpecies, type FishSpecies } from '../lib/fish'
 import { useGame } from '../lib/gameState'
@@ -43,6 +43,8 @@ export function FishingScene() {
   const escapeTimer = useRef<number | null>(null)
   const { camera } = useThree()
   const { gl } = useR3F()
+  const fpRig = useRef<THREE.Group>(null)
+  const rodTipRef = useRef<THREE.Object3D>(null)
 
   // Camera look-around state
   const lookYaw = useRef(0)
@@ -279,6 +281,11 @@ export function FishingScene() {
     camera.rotation.y = THREE.MathUtils.lerp(camera.rotation.y, targetRotY, 0.1)
     camera.rotation.x = THREE.MathUtils.lerp(camera.rotation.x, targetRotX, 0.1)
     camera.position.y = THREE.MathUtils.lerp(camera.position.y, 1.6 + Math.sin(performance.now() * 0.0005) * 0.03, 0.05)
+
+    if (fpRig.current) {
+      fpRig.current.position.copy(camera.position)
+      fpRig.current.quaternion.copy(camera.quaternion)
+    }
   })
 
   const fishVisible = state === 'waiting' || state === 'approaching' || state === 'bite' || state === 'reeling' || state === 'escaped' || state === 'caught'
@@ -308,7 +315,10 @@ export function FishingScene() {
       <Environment />
       <Water />
 
-      <FishingRod castProgress={castProgress} tension={tension} bobberPos={bobberPos} />
+      <group ref={fpRig}>
+        <FishingRod castProgress={castProgress} tension={tension} tipRef={rodTipRef} />
+      </group>
+      <FishingLine tipRef={rodTipRef} bobberPos={bobberPos} />
       {bobberPos && <Bobber position={bobberPos} dip={bobberDip} />}
 
       {displaySpecies && (

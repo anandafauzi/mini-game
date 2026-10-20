@@ -160,3 +160,14 @@ export function playAlertSound() {
 export function isAudioStarted() {
   return started
 }
+
+export function pauseAmbient() {
+  if (masterGain) masterGain.gain.value = 0
+  ctx?.suspend()
+}
+
+export function resumeAmbient() {
+  if (!started || !ctx) return
+  ctx.resume()
+  if (masterGain) masterGain.gain.value = 0.35
+}
