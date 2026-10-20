@@ -6,7 +6,7 @@ import { Water } from './Water'
 import { Riverbed, Rapids } from './Riverbed'
 import { Fish } from './Fish'
 import { Bobber, FishingRod, FishingLine } from './FishingRod'
-import { Clouds, Birds, Mist } from './Sky'
+import { Clouds, Birds, Mist, Particles } from './Sky'
 import { DayNight } from './DayNight'
 import { pickRandomSpecies, type FishSpecies } from '../lib/fish'
 import { useGame } from '../lib/gameState'
@@ -20,6 +20,37 @@ type FishingState = 'idle' | 'casting' | 'waiting' | 'approaching' | 'bite' | 'r
 
 const BOBBER_REST: [number, number, number] = [0, 0.05, -4]
 const CAST_TARGET: [number, number, number] = [0.4, 0.05, -5.5]
+
+/** Expanding ripple rings on the water surface around the bobber. */
+function Ripple({ position, active }: { position: [number, number, number]; active: boolean }) {
+  const refs = useRef<(THREE.Mesh | null)[]>([])
+  useFrame(({ clock }) => {
+    const t = clock.elapsedTime
+    refs.current.forEach((m, i) => {
+      if (!m) return
+      const phase = (t * (active ? 0.9 : 0.5) + i * 0.5) % 1.5
+      const k = phase / 1.5
+      m.scale.setScalar(0.15 + k * 1.1)
+      const mat = m.material as THREE.MeshBasicMaterial
+      mat.opacity = (1 - k) * (active ? 0.5 : 0.28)
+    })
+  })
+  return (
+    <group position={[position[0], 0.025, position[2]]} rotation={[-Math.PI / 2, 0, 0]}>
+      {[0, 1, 2].map((i) => (
+        <mesh
+          key={i}
+          ref={(el) => {
+            refs.current[i] = el
+          }}
+        >
+          <ringGeometry args={[0.16, 0.22, 24]} />
+          <meshBasicMaterial color="#eafaff" transparent opacity={0.3} depthWrite={false} />
+        </mesh>
+      ))}
+    </group>
+  )
+}
 
 export function FishingScene() {
   const phase = useGame((s) => s.phase)
@@ -367,6 +398,7 @@ export function FishingScene() {
       <Clouds />
       <Birds />
       <Mist />
+      <Particles />
       <Environment />
       <Riverbed />
       <Water />
@@ -393,6 +425,7 @@ export function FishingScene() {
       </group>
       <FishingLine tipRef={rodTipRef} bobberPos={bobberPos} />
       {bobberPos && <Bobber position={bobberPos} dip={bobberDip} />}
+      {bobberPos && <Ripple position={bobberPos} active={state === 'bite' || bobberDip > 0.05} />}
 
       {displaySpecies && (
         <Fish

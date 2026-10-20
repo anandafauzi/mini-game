@@ -3,6 +3,7 @@ import { useFrame, useThree } from '@react-three/fiber'
 import { Sky } from '@react-three/drei'
 import * as THREE from 'three'
 import { useTime, sunHeight } from '../lib/timeOfDay'
+import { useGraphics } from '../lib/graphics'
 
 interface Preset {
   sun: string
@@ -74,29 +75,35 @@ export function DayNight() {
   const h = sunHeight(clockHour)
   const angle = ((clockHour - 6) / 12) * Math.PI
   const sunPos: [number, number, number] = [Math.cos(angle) * 40, Math.max(-6, h * 40), -20]
+  const shadowMap = useGraphics((s) => s.settings.shadowMapSize)
+  const shadows = useGraphics((s) => s.settings.shadowsEnabled)
 
   return (
     <>
       <ambientLight ref={ambientRef} intensity={0.6} />
-      <hemisphereLight ref={hemiRef} args={['#bfe3f0', '#4f7a3a', 0.55]} />
+      <hemisphereLight ref={hemiRef} args={['#cfeaf5', '#5a7a3e', 0.6]} />
       <directionalLight
         ref={dirRef}
         position={sunPos}
-        intensity={1.6}
-        castShadow
-        shadow-mapSize={[2048, 2048]}
-        shadow-camera-left={-20}
-        shadow-camera-right={20}
-        shadow-camera-top={20}
-        shadow-camera-bottom={-20}
+        intensity={1.9}
+        castShadow={shadows}
+        shadow-mapSize={[shadowMap, shadowMap]}
+        shadow-camera-left={-26}
+        shadow-camera-right={26}
+        shadow-camera-top={26}
+        shadow-camera-bottom={-26}
+        shadow-camera-near={0.5}
+        shadow-camera-far={120}
+        shadow-bias={-0.0004}
+        shadow-normalBias={0.02}
         color="#fff4e6"
       />
       <Sky
         sunPosition={sunPos}
         turbidity={current.current.skyTurbidity}
         rayleigh={current.current.skyRayleigh}
-        mieCoefficient={0.008}
-        mieDirectionalG={0.85}
+        mieCoefficient={0.006}
+        mieDirectionalG={0.8}
       />
     </>
   )

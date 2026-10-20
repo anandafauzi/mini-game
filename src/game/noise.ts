@@ -62,28 +62,33 @@ export function seededRandom(seed: number): number {
 
 /**
  * High-resolution terrain heightfield covering the whole valley.
- * The river channel is carved as a smooth trench along the Z axis.
+ * The river channel is carved as a smooth trench along the Z axis and the
+ * valley sides rise into rolling hills with layered fbm detail.
  */
 export function terrainHeight(x: number, z: number): number {
   // distance from the river centreline (river runs down x=0)
   const riverDist = Math.abs(x)
 
-  // gentle far terrain rise with fbm hills
-  const hills = fbm(x * 0.045 + 10, z * 0.045 + 20, 5) * 9
-  const ridges = ridged(x * 0.02 + 3, z * 0.02 + 7, 4) * 6
+  // multi-octave hills and ridge detail
+  const hills = fbm(x * 0.04 + 10, z * 0.04 + 20, 5) * 10
+  const ridges = ridged(x * 0.018 + 3, z * 0.018 + 7, 5) * 8
+  const micro = fbm(x * 0.18 + 40, z * 0.18 + 60, 3) * 0.6
 
-  // river valley carve
-  const bankWidth = 6.5
-  const carve = Math.max(0, 1 - riverDist / bankWidth)
-  const channel = Math.pow(carve, 2.2)
+  let h = hills * 0.32 + ridges * 0.22 + micro
+  // valley walls rise away from the river
+  h += Math.min(1, Math.max(0, riverDist - 7) / 16) * 9
 
-  let h = hills * 0.3 + ridges * 0.2
-  // raise sides far from river to form valley walls (starts beyond the bank)
-  h += Math.min(1, Math.max(0, riverDist - 8) / 14) * 7
-  // carve river trough
-  h -= channel * 3.2
-  // flatten near bank for walkable ground
-  if (riverDist < 8) h = THREE.MathUtils.lerp(h, -0.05, (1 - riverDist / 8) * 0.6)
+  // river trough carve
+  const carve = Math.max(0, 1 - riverDist / 6.8)
+  h -= Math.pow(carve, 2.2) * 3.4
+
+  // flatten the near bank so the angler stands on level ground
+  if (riverDist < 8) h = THREE.MathUtils.lerp(h, -0.05, (1 - riverDist / 8) * 0.65)
 
   return h - 0.15
+}
+
+/** True when a point is on/near the walkable riverbank. */
+export function isBank(x: number, z: number): boolean {
+  return Math.abs(x) < 9 && z > -12 && z < 9
 }

@@ -95,11 +95,11 @@ export function FishingRod({ castProgress, tension, tipRef }: FishingRodProps) {
         {/* mid + tip blank (two-tone for depth) */}
         <mesh castShadow position={[0, 0.42, 0.62]} rotation={[Math.PI / 2.35, 0, 0]}>
           <cylinderGeometry args={[0.012, 0.019, 0.95, 12]} />
-          <meshStandardMaterial color="#3f2c22" roughness={0.45} />
+          <meshStandardMaterial color="#3f2c22" roughness={0.4} metalness={0.08} />
         </mesh>
         <mesh castShadow position={[0, 0.72, 0.95]} rotation={[Math.PI / 2.35, 0, 0]}>
           <cylinderGeometry args={[0.006, 0.011, 0.7, 10]} />
-          <meshStandardMaterial color="#2a1d16" roughness={0.4} />
+          <meshStandardMaterial color="#2a1d16" roughness={0.35} metalness={0.1} />
         </mesh>
         {/* line guides */}
         {[0.2, 0.5, 0.85].map((z, i) => (
@@ -162,16 +162,22 @@ export function Bobber({ position, dip = 0 }: { position: [number, number, numbe
   return (
     <group position={[position[0], position[1] - dip, position[2]]}>
       <mesh castShadow>
-        <sphereGeometry args={[0.08, 12, 12]} />
-        <meshStandardMaterial color="#e23b3b" roughness={0.5} />
+        <sphereGeometry args={[0.08, 16, 16]} />
+        <meshStandardMaterial color="#e23b3b" roughness={0.28} metalness={0.1} />
       </mesh>
       <mesh position={[0, 0.05, 0]}>
-        <sphereGeometry args={[0.06, 12, 12]} />
-        <meshStandardMaterial color="#f8fafc" roughness={0.4} />
+        <sphereGeometry args={[0.06, 16, 16]} />
+        <meshStandardMaterial color="#f8fafc" roughness={0.22} metalness={0.05} />
       </mesh>
       <mesh position={[0, 0.14, 0]}>
-        <cylinderGeometry args={[0.008, 0.008, 0.12, 6]} />
-        <meshStandardMaterial color="#facc15" emissive="#facc15" emissiveIntensity={0.3} />
+        <cylinderGeometry args={[0.008, 0.008, 0.12, 8]} />
+        <meshStandardMaterial
+          color="#facc15"
+          emissive="#facc15"
+          emissiveIntensity={0.45}
+          roughness={0.3}
+          metalness={0.2}
+        />
       </mesh>
     </group>
   )

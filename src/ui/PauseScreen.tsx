@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { setMuted, setVolume } from '../lib/audio'
+import { useGraphics, QUALITY_LABEL, type Quality } from '../lib/graphics'
 
 export function PauseScreen({
   onResume,
@@ -10,6 +11,8 @@ export function PauseScreen({
 }) {
   const [vol, setVol] = useState(0.35)
   const [muted, setMutedState] = useState(false)
+  const quality = useGraphics((s) => s.quality)
+  const setQuality = useGraphics((s) => s.setQuality)
 
   const handleVol = (v: number) => {
     setVol(v)
@@ -46,6 +49,25 @@ export function PauseScreen({
             onChange={(e) => handleVol(Number(e.target.value))}
             className="flex-1 accent-emerald-500"
           />
+        </div>
+
+        <div className="mt-4">
+          <div className="mb-2 text-left text-xs font-bold uppercase tracking-wide text-white/50">
+            Kualitas Grafis
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            {(['low', 'medium', 'high'] as Quality[]).map((q) => (
+              <button
+                key={q}
+                onClick={() => setQuality(q)}
+                className={`rounded-lg py-2 text-xs font-bold transition active:scale-95 ${
+                  quality === q ? 'bg-emerald-500 text-slate-900' : 'bg-white/10 text-white/70 hover:bg-white/20'
+                }`}
+              >
+                {QUALITY_LABEL[q]}
+              </button>
+            ))}
+          </div>
         </div>
 
         <button

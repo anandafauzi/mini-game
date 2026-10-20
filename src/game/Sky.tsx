@@ -1,6 +1,7 @@
 import { useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
+import { useGraphics } from '../lib/graphics'
 
 function Cloud({
   position,
@@ -178,5 +179,50 @@ export function Mist() {
       <MistLayer position={[0, 5.2, -48]} width={60} speed={0.14} opacity={0.06} />
       <MistLayer position={[-2, 1.8, -26]} width={40} speed={0.32} opacity={0.05} />
     </group>
+  )
+}
+
+/** Fine floating specks (dust / insects) that make the scene feel alive. */
+export function Particles() {
+  const count = useGraphics((s) => s.settings.particleCount)
+  const ref = useRef<THREE.Points>(null)
+  const { positions, speeds } = useMemo(() => {
+    const positions = new Float32Array(count * 3)
+    const speeds = new Float32Array(count)
+    for (let i = 0; i < count; i++) {
+      positions[i * 3] = (Math.random() - 0.5) * 16
+      positions[i * 3 + 1] = 0.6 + Math.random() * 3.5
+      positions[i * 3 + 2] = 6 - Math.random() * 30
+      speeds[i] = 0.3 + Math.random() * 0.7
+    }
+    return { positions, speeds }
+  }, [count])
+
+  useFrame(() => {
+    if (!ref.current) return
+    const attr = ref.current.geometry.attributes.position as THREE.BufferAttribute
+    const arr = attr.array as Float32Array
+    const t = performance.now() * 0.001
+    for (let i = 0; i < count; i++) {
+      arr[i * 3] += Math.sin(t * speeds[i] + i) * 0.004
+      arr[i * 3 + 1] += Math.cos(t * speeds[i] * 0.7 + i) * 0.002
+    }
+    attr.needsUpdate = true
+  })
+
+  return (
+    <points ref={ref}>
+      <bufferGeometry>
+        <bufferAttribute attach="attributes-position" args={[positions, 3]} />
+      </bufferGeometry>
+      <pointsMaterial
+        size={0.05}
+        color="#fffbe8"
+        transparent
+        opacity={0.5}
+        sizeAttenuation
+        depthWrite={false}
+      />
+    </points>
   )
 }

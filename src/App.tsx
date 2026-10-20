@@ -14,6 +14,7 @@ import { PauseScreen } from './ui/PauseScreen'
 import { ResultScreen } from './ui/ResultScreen'
 import { pauseAmbient, resumeAmbient } from './lib/audio'
 import { useTime } from './lib/timeOfDay'
+import { useGraphics } from './lib/graphics'
 
 const DEFAULT_QUESTIONS_CSV_URL =
   'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ89t10uH61U1DFch8HSsCBWc4yzt8o19DttoGdF_B3fCWrf-GthMEnVcihVdNhXaUkJc8tZNFSsQAD/pub?output=csv'
@@ -25,6 +26,8 @@ export default function App() {
   const setQuestions = useGame((s) => s.setQuestions)
   const finishGame = useGame((s) => s.finishGame)
   const setTimePaused = useTime((s) => s.setPaused)
+  const quality = useGraphics((s) => s.quality)
+  const settings = useGraphics((s) => s.settings)
   const [paused, setPaused] = useState(false)
   const [bagOpen, setBagOpen] = useState(false)
 
@@ -101,11 +104,12 @@ export default function App() {
     <div className="relative h-full w-full">
       <div id="game-canvas-container" className="absolute inset-0">
         <Canvas
-          shadows
-          dpr={[1, 1.75]}
+          key={quality}
+          shadows={settings.shadowsEnabled}
+          dpr={settings.dpr}
           camera={{ position: [0, 1.6, 3], fov: 62, near: 0.1, far: 400 }}
           gl={{
-            antialias: true,
+            antialias: quality !== 'low',
             toneMapping: THREE.ACESFilmicToneMapping,
             toneMappingExposure: 1.05,
             outputColorSpace: THREE.SRGBColorSpace,
