@@ -115,6 +115,13 @@ function trunkGeometry(): THREE.BufferGeometry {
   return g
 }
 
+/** A taller, slimmer trunk for the second tree archetype. */
+function trunkTallGeometry(): THREE.BufferGeometry {
+  const g = new THREE.CylinderGeometry(0.08, 0.22, 5.2, 7, 1)
+  g.translate(0, 2.6, 0)
+  return g
+}
+
 function canopyGeometry(seed: number, radius: number, y: number): THREE.BufferGeometry {
   const g = blob(radius, 1, seed, 0.78)
   g.translate(0, y, 0)
@@ -221,7 +228,27 @@ function useVegetation(density: number) {
         sx: scale * (0.85 + rnd * 0.3),
         sy: scale,
         sz: scale * (0.85 + rnd * 0.3),
-        color: ['#3f6b2a', '#4c7a30', '#355c24', '#568438', '#2f5220'][Math.floor(rnd * 5)],
+        color: ['#3f6b2a', '#4c7a30', '#355c24', '#568438', '#2f5220', '#4a7d3a', '#3a6636'][
+          Math.floor(rnd * 7)
+        ],
+      }
+    })
+
+    // A second, taller tree archetype so the treeline never repeats one shape.
+    const treesTall = scatter(Math.round(60 * d), 33, 190, (x, z, rnd) => {
+      const s = sampleLand(x, z)
+      if (s.t < 1.6 || s.paddy > 0.3 || s.h < 1 || s.h > 40) return null
+      if (rnd < 0.35) return null
+      const scale = 0.8 + rnd * 1.0
+      return {
+        x,
+        y: s.h - 0.15,
+        z,
+        rot: rnd * Math.PI * 2,
+        sx: scale * (0.8 + rnd * 0.3),
+        sy: scale * (0.95 + rnd * 0.35),
+        sz: scale * (0.8 + rnd * 0.3),
+        color: ['#2f5220', '#3a6636', '#456f2c', '#2c4a1c', '#547f3a'][Math.floor(rnd * 5)],
       }
     })
 
@@ -311,7 +338,7 @@ function useVegetation(density: number) {
       }
     })
 
-    return { trees, bamboo, rice, grass, reeds, bushes }
+    return { trees, treesTall, bamboo, rice, grass, reeds, bushes }
   }, [density])
 }
 
@@ -323,8 +350,11 @@ export function Vegetation() {
   const geo = useMemo(
     () => ({
       trunk: trunkGeometry(),
+      trunkTall: trunkTallGeometry(),
       canopyLow: canopyGeometry(2.4, 1.6, 3.2),
       canopyHigh: canopyGeometry(7.9, 1.15, 4.5),
+      canopyTallLow: canopyGeometry(4.9, 1.5, 4.6),
+      canopyTallHigh: canopyGeometry(12.3, 1.05, 5.6),
       bamboo: bambooClump(31),
       bush: blob(1, 1, 53, 0.62),
       grass: crossCard(1, 1),
@@ -342,6 +372,11 @@ export function Vegetation() {
       <InstancedField geometry={geo.trunk} material={mats.trunk} spots={v.trees} castShadow />
       <InstancedField geometry={geo.canopyLow} material={mats.canopy} spots={v.trees} castShadow />
       <InstancedField geometry={geo.canopyHigh} material={mats.canopy} spots={v.trees} castShadow />
+
+      {/* tall tree archetype */}
+      <InstancedField geometry={geo.trunkTall} material={mats.trunk} spots={v.treesTall} castShadow />
+      <InstancedField geometry={geo.canopyTallLow} material={mats.canopy} spots={v.treesTall} castShadow />
+      <InstancedField geometry={geo.canopyTallHigh} material={mats.canopy} spots={v.treesTall} castShadow />
 
       <InstancedField geometry={geo.bamboo} material={mats.bamboo} spots={v.bamboo} castShadow />
       <InstancedField geometry={geo.bush} material={mats.bush} spots={v.bushes} castShadow />

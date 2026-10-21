@@ -358,14 +358,19 @@ export function FishingScene() {
     return () => window.removeEventListener('keydown', onKey)
   }, [handleAction, phase])
 
-  // Camera look-around: pointer-lock on desktop, drag on touch
+  // Camera look-around: pointer-lock / drag-look on desktop, drag on touch.
+  // Camera only rotates; the player never moves (joystick removed).
   useEffect(() => {
     const canvas = document.querySelector('canvas') as HTMLCanvasElement
     if (!canvas) return
+    // keep touch-drag from scrolling / zooming the page
+    canvas.style.touchAction = 'none'
+
     const onPointerDown = (e: PointerEvent) => {
       const target = e.target as HTMLElement
       if (target.closest('[data-ui]')) return
-      if (!pointerLocked.current && e.pointerType === 'mouse' && document.pointerLockElement !== canvas) {
+      // Desktop: click to enter pointer-lock (after a real user gesture).
+      if (e.pointerType === 'mouse' && document.pointerLockElement !== canvas) {
         canvas.requestPointerLock?.()
       }
       dragging.current = true
@@ -378,7 +383,7 @@ export function FishingScene() {
       const dy = e.clientY - lastPointer.current.y
       lastPointer.current = { x: e.clientX, y: e.clientY }
       lookYaw.current = THREE.MathUtils.clamp(lookYaw.current - dx * 0.004, -1.5, 1.5)
-      lookPitch.current = THREE.MathUtils.clamp(lookPitch.current - dy * 0.003, -0.5, 0.6)
+      lookPitch.current = THREE.MathUtils.clamp(lookPitch.current - dy * 0.003, -0.62, 0.72)
     }
     const onPointerUp = () => {
       dragging.current = false
@@ -386,23 +391,31 @@ export function FishingScene() {
     const onMouseMove = (e: MouseEvent) => {
       if (!pointerLocked.current) return
       lookYaw.current = THREE.MathUtils.clamp(lookYaw.current - e.movementX * 0.0022, -1.5, 1.5)
-      lookPitch.current = THREE.MathUtils.clamp(lookPitch.current - e.movementY * 0.002, -0.5, 0.6)
+      lookPitch.current = THREE.MathUtils.clamp(lookPitch.current - e.movementY * 0.002, -0.62, 0.72)
     }
     const onLockChange = () => {
       pointerLocked.current = document.pointerLockElement === canvas
       playerInput.pointerLocked = pointerLocked.current
     }
+    // stop the browser from scrolling the page while dragging the river view
+    const onTouchMove = (e: TouchEvent) => {
+      if (dragging.current) e.preventDefault()
+    }
     canvas.addEventListener('pointerdown', onPointerDown)
     window.addEventListener('pointermove', onPointerMove)
     window.addEventListener('pointerup', onPointerUp)
+    window.addEventListener('pointercancel', onPointerUp)
     window.addEventListener('mousemove', onMouseMove)
     document.addEventListener('pointerlockchange', onLockChange)
+    canvas.addEventListener('touchmove', onTouchMove, { passive: false })
     return () => {
       canvas.removeEventListener('pointerdown', onPointerDown)
       window.removeEventListener('pointermove', onPointerMove)
       window.removeEventListener('pointerup', onPointerUp)
+      window.removeEventListener('pointercancel', onPointerUp)
       window.removeEventListener('mousemove', onMouseMove)
       document.removeEventListener('pointerlockchange', onLockChange)
+      canvas.removeEventListener('touchmove', onTouchMove)
     }
   }, [])
 
@@ -422,7 +435,7 @@ export function FishingScene() {
 
     if (playerInput.look.yaw !== 0 || playerInput.look.pitch !== 0) {
       lookYaw.current = THREE.MathUtils.clamp(lookYaw.current - playerInput.look.yaw, -1.5, 1.5)
-      lookPitch.current = THREE.MathUtils.clamp(lookPitch.current - playerInput.look.pitch, -0.5, 0.6)
+      lookPitch.current = THREE.MathUtils.clamp(lookPitch.current - playerInput.look.pitch, -0.62, 0.72)
       playerInput.look.yaw = 0
       playerInput.look.pitch = 0
     }
@@ -471,12 +484,12 @@ export function FishingScene() {
       _down.set(0, -1, 0).applyQuaternion(cam.quaternion)
       // lateral offset sized relative to the frustum half-width at rig depth
       const halfAtRef = Math.tan((cam.fov * Math.PI) / 360) * cam.aspect * 0.42
-      const lat = THREE.MathUtils.clamp(halfAtRef * 0.5, 0.12, 0.34)
-      fpRig.current.scale.setScalar(0.88)
+      const lat = THREE.MathUtils.clamp(halfAtRef * 0.62, 0.16, 0.4)
+      fpRig.current.scale.setScalar(0.82)
       fpRig.current.position
         .copy(cam.position)
         .addScaledVector(_right, lat)
-        .addScaledVector(_down, 0.34)
+        .addScaledVector(_down, 0.4)
         .addScaledVector(_fwd, 0.44)
       fpRig.current.quaternion.copy(cam.quaternion)
 
@@ -519,21 +532,40 @@ export function FishingScene() {
       <group ref={fpRig}>
         <FishingRod castProgress={castProgress} tension={tension} tipRef={rodTipRef} />
         {state === 'reeling' && (
-          <group ref={reelBarRef} position={[0, 0.12, -1.4]}>
-            {/* track: light blue so it reads clearly against sea & sky */}
+          <group ref={reelBarRef} position={[0, 0.28, -1.36]}>
+            {/* track: high-contrast background */}
             <mesh>
-              <planeGeometry args={[1.6, 0.18]} />
-              <meshBasicMaterial color="#7dd3fc" transparent opacity={0.85} depthTest={false} />
+              <planeGeometry args={[1.9, 0.24]} />
+              <meshBasicMaterial color="#1e293b" transparent opacity={0.9} depthTest={false} />
             </mesh>
-            {/* green bonus zone */}
+            {/* track border */}
+            <mesh position={[0, 0, -0.001]}>
+              <planeGeometry args={[1.96, 0.3]} />
+              <meshBasicMaterial color="#0f172a" transparent opacity={0.95} depthTest={false} />
+            </mesh>
+            {/* green bonus zone: larger, higher contrast */}
             <mesh position={[0, 0, 0.01]}>
-              <planeGeometry args={[0.28 - (activeFish?.reelDifficulty ?? 0.3) * 0.12, 0.18]} />
-              <meshBasicMaterial color="#22c55e" transparent opacity={0.95} depthTest={false} />
+              <planeGeometry args={[0.42 - (activeFish?.reelDifficulty ?? 0.3) * 0.14, 0.24]} />
+              <meshBasicMaterial color="#22c55e" transparent opacity={1.0} depthTest={false} />
             </mesh>
-            {/* moving marker: bright white on blue/green */}
-            <mesh position={[(reelProgress - 0.5) * 1.6, 0, 0.02]}>
-              <planeGeometry args={[0.07, 0.22]} />
+            {/* green zone glow */}
+            <mesh position={[0, 0, 0.012]}>
+              <planeGeometry args={[0.46 - (activeFish?.reelDifficulty ?? 0.3) * 0.14, 0.26]} />
+              <meshBasicMaterial color="#4ade80" transparent opacity={0.35} depthTest={false} />
+            </mesh>
+            {/* moving marker: thick white bar with dark outline for legibility */}
+            <mesh position={[(reelProgress - 0.5) * 1.9, 0, 0.02]}>
+              <planeGeometry args={[0.09, 0.3]} />
               <meshBasicMaterial color="#ffffff" depthTest={false} />
+            </mesh>
+            <mesh position={[(reelProgress - 0.5) * 1.9, 0, 0.019]}>
+              <planeGeometry args={[0.11, 0.32]} />
+              <meshBasicMaterial color="#0f172a" transparent opacity={0.9} depthTest={false} />
+            </mesh>
+            {/* status hint */}
+            <mesh position={[0, -0.19, 0.01]}>
+              <planeGeometry args={[0.9, 0.1]} />
+              <meshBasicMaterial color="#f59e0b" transparent opacity={0.95} depthTest={false} />
             </mesh>
           </group>
         )}

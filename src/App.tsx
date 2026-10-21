@@ -5,16 +5,19 @@ import { FishingScene } from './game/FishingScene'
 import { useGame } from './lib/gameState'
 import { loadQuestions } from './lib/questions'
 import { StartScreen } from './ui/StartScreen'
+import { IdentityScreen } from './ui/IdentityScreen'
 import { QuizOverlay } from './ui/QuizOverlay'
 import { CatchPanel } from './ui/CatchPanel'
 import { LeaderboardWidget } from './ui/Leaderboard'
 import { Hud, FishingControls } from './ui/Hud'
 import { Inventory } from './ui/Inventory'
+import { Encyclopedia } from './ui/Encyclopedia'
 import { PauseScreen } from './ui/PauseScreen'
 import { ResultScreen } from './ui/ResultScreen'
 import { pauseAmbient, resumeAmbient } from './lib/audio'
 import { useTime } from './lib/timeOfDay'
 import { useGraphics } from './lib/graphics'
+import { loadIdentity } from './lib/identity'
 
 const DEFAULT_QUESTIONS_CSV_URL =
   'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ89t10uH61U1DFch8HSsCBWc4yzt8o19DttoGdF_B3fCWrf-GthMEnVcihVdNhXaUkJc8tZNFSsQAD/pub?output=csv'
@@ -63,13 +66,23 @@ export default function App() {
   const phase = useGame((s) => s.phase)
   const setQuestions = useGame((s) => s.setQuestions)
   const finishGame = useGame((s) => s.finishGame)
+  const setIdentity = useGame((s) => s.setIdentity)
   const setTimePaused = useTime((s) => s.setPaused)
   const quality = useGraphics((s) => s.quality)
   const settings = useGraphics((s) => s.settings)
   const [paused, setPaused] = useState(false)
   const [bagOpen, setBagOpen] = useState(false)
+  const [bookOpen, setBookOpen] = useState(false)
+
+  useEffect(() => {
+    const id = loadIdentity()
+    if (id) {
+      setIdentity(id.fullName, id.prodi)
+    }
+  }, [setIdentity])
 
   const handlePause = () => {
+    document.exitPointerLock?.()
     setPaused(true)
     setTimePaused(true)
     pauseAmbient()
@@ -92,6 +105,8 @@ export default function App() {
       if (e.code === 'Escape' && phase === 'fishing') {
         if (bagOpen) {
           setBagOpen(false)
+        } else if (bookOpen) {
+          setBookOpen(false)
         } else {
           setPaused((p) => {
             const next = !p
@@ -105,7 +120,7 @@ export default function App() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [phase, bagOpen, setTimePaused])
+  }, [phase, bagOpen, bookOpen, setTimePaused])
 
   useEffect(() => {
     loadQuestions(QUESTIONS_CSV_URL)
@@ -164,14 +179,16 @@ export default function App() {
         <div className="pointer-events-none absolute inset-0 cinematic-vignette" />
       </div>
 
-      <Hud onPause={handlePause} onOpenBag={() => setBagOpen(true)} />
+      <Hud onPause={handlePause} onOpenBag={() => { document.exitPointerLock?.(); setBagOpen(true) }} onOpenBook={() => { document.exitPointerLock?.(); setBookOpen(true) }} />
       <FishingControls />
       <LeaderboardWidget />
       <QuizOverlay />
       <CatchPanel />
       <ResultScreen />
-      {bagOpen && <Inventory onClose={() => setBagOpen(false)} />}
+      {bagOpen && <Inventory onClose={() => setBagOpen(false)} onOpenBook={() => { setBagOpen(false); setBookOpen(true) }} />}
+      {bookOpen && <Encyclopedia onClose={() => setBookOpen(false)} />}
       {paused && phase === 'fishing' && <PauseScreen onResume={handleResume} onQuit={handleQuit} />}
+      {phase === 'identity' && <IdentityScreen />}
       {phase === 'menu' && <StartScreen />}
     </div>
   )

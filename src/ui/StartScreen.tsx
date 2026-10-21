@@ -51,7 +51,7 @@ export function StartScreen() {
       <div data-ui className="relative w-full max-w-md mx-4 rounded-2xl bg-white/95 p-8 shadow-2xl backdrop-blur">
         <div className="text-center">
           <div className="text-5xl mb-2">🎣</div>
-          <h1 className="text-3xl font-black text-sky-800">Mancing Kuis Nusantara</h1>
+          <h1 className="text-3xl font-black text-sky-800">Mancing Mania</h1>
           <p className="mt-2 text-sm text-gray-600">
             Mancing di sungai Nusantara, jawab kuis, raih skor tertinggi!
           </p>
@@ -86,7 +86,7 @@ export function StartScreen() {
         </button>
 
         <div className="mt-4 text-xs text-gray-500 leading-relaxed">
-          <p><b>Cara main:</b> Gerak dengan joystick (kiri) / WASD, geser layar atau gerakkan mouse untuk melihat. Tekan <b>CAST</b> untuk melempar, <b>HOOK</b> saat ikan menyambar, lalu <b>REEL</b> di zona hijau untuk ikan besar. Buka <b>Tas</b> untuk ganti umpan & upgrade alat. ESC = jeda.</p>
+          <p><b>Cara main:</b> Gerak dengan joystick (kiri) / WASD, geser layar atau gerakkan mouse untuk melihat. Tekan <b>CAST</b> untuk melempar, <b>HOOK</b> saat ikan menyambar, lalu <b>REEL</b> di zona hijau untuk ikan besar. Buka <b>Tas</b> untuk ganti umpan & upgrade alat, dan <b>Ensiklopedia</b> (📖) untuk melihat koleksi ikan sungai. ESC = jeda.</p>
         </div>
       </div>
     </div>

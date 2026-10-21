@@ -1,8 +1,9 @@
 import { create } from 'zustand'
 import type { FishSpecies } from './fish'
 import type { Question } from './questions'
+import { identityKey } from './identity'
 
-export type Phase = 'menu' | 'fishing' | 'catch' | 'quiz' | 'result'
+export type Phase = 'identity' | 'menu' | 'fishing' | 'catch' | 'quiz' | 'result'
 
 export interface QuizResult {
   questionId: number
@@ -30,9 +31,14 @@ export interface CaughtFishState {
 interface GameState {
   phase: Phase
   playerName: string
+  playerProdi: string
+  identityKey: string
+  sessionId: string
   questions: Question[]
   questionIndex: number
   score: number
+  correctCount: number
+  wrongCount: number
   results: QuizResult[]
   caughtFish: FishSpecies | null
   caughtFishInfo: CaughtFishState | null
@@ -46,7 +52,10 @@ interface GameState {
   fishCaughtCount: number
   /** Ids of questions already asked this session (never repeated). */
   usedQuestionIds: number[]
+  hasFinishedSession: boolean
 
+  setIdentity: (fullName: string, prodi: string) => void
+  changeIdentity: () => void
   setPlayerName: (name: string) => void
   setQuestions: (questions: Question[]) => void
   startGame: () => void
@@ -72,12 +81,27 @@ export function speedBonus(timeMs: number): number {
 export const QUESTION_TIME_LIMIT = QUESTION_TIME_LIMIT_MS
 export const MAX_REEL_ATTEMPTS = 3
 
+function makeSessionId(): string {
+  try {
+    const buf = new Uint8Array(8)
+    crypto.getRandomValues(buf)
+    return Array.from(buf).map((b) => b.toString(16).padStart(2, '0')).join('')
+  } catch {
+    return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
+  }
+}
+
 export const useGame = create<GameState>((set, get) => ({
-  phase: 'menu',
+  phase: 'identity',
   playerName: '',
+  playerProdi: '',
+  identityKey: '',
+  sessionId: makeSessionId(),
   questions: [],
   questionIndex: 0,
   score: 0,
+  correctCount: 0,
+  wrongCount: 0,
   results: [],
   caughtFish: null,
   caughtFishInfo: null,
@@ -90,8 +114,35 @@ export const useGame = create<GameState>((set, get) => ({
   reelAttemptsLeft: MAX_REEL_ATTEMPTS,
   fishCaughtCount: 0,
   usedQuestionIds: [],
+  hasFinishedSession: false,
 
-  setPlayerName: (name) => set({ playerName: name }),
+  setIdentity: (fullName, prodi) => {
+    const name = fullName.replace(/\s+/g, ' ').trim()
+    const prodiNorm = prodi.replace(/\s+/g, ' ').trim()
+    if (name.length < 2 || prodiNorm.length < 2) return
+    set({ playerName: name, playerProdi: prodiNorm, identityKey: identityKey(name, prodiNorm), phase: 'menu' })
+  },
+  changeIdentity: () => {
+    set({
+      phase: 'identity',
+      playerName: '',
+      playerProdi: '',
+      identityKey: '',
+      sessionId: makeSessionId(),
+      score: 0,
+      correctCount: 0,
+      wrongCount: 0,
+      results: [],
+      questionIndex: 0,
+      usedQuestionIds: [],
+      hasFinishedSession: false,
+      quizQuestion: null,
+      caughtFish: null,
+      caughtFishInfo: null,
+      totalPlayTimeMs: 0,
+    })
+  },
+  setPlayerName: (name) => set({ playerName: name.replace(/\s+/g, ' ').trim() }),
   // Drop duplicate questions on load (same id or same wording) so a question
   // can never appear twice in a session even if the spreadsheet has repeats.
   setQuestions: (questions) => {
@@ -108,11 +159,19 @@ export const useGame = create<GameState>((set, get) => ({
     set({ questions: deduped })
   },
 
-  startGame: () =>
+  startGame: () => {
+    const s = get()
+    if (!s.playerName || !s.playerProdi) {
+      set({ phase: 'identity' })
+      return
+    }
     set({
       phase: 'fishing',
+      sessionId: makeSessionId(),
       questionIndex: 0,
       score: 0,
+      correctCount: 0,
+      wrongCount: 0,
       results: [],
       caughtFish: null,
       caughtFishInfo: null,
@@ -124,7 +183,9 @@ export const useGame = create<GameState>((set, get) => ({
       reelAttemptsLeft: MAX_REEL_ATTEMPTS,
       fishCaughtCount: 0,
       usedQuestionIds: [],
-    }),
+      hasFinishedSession: false,
+    })
+  },
 
   onFishCaught: (fish, info) =>
     set((s) => ({
@@ -202,9 +263,15 @@ export const useGame = create<GameState>((set, get) => ({
       fishBonus: 0,
     })
 
+    const updatedCorrect = correct ? get().correctCount + 1 : get().correctCount
+    const updatedWrong = !correct ? get().wrongCount + 1 : get().wrongCount
+    const updatedScore = score + points
+
     set({
       results: [...results],
-      score: score + points,
+      score: updatedScore,
+      correctCount: updatedCorrect,
+      wrongCount: updatedWrong,
       lastPoints: points,
       lastQuizCorrect: correct,
       quizQuestion: null,
@@ -218,7 +285,18 @@ export const useGame = create<GameState>((set, get) => ({
     })
   },
 
-  finishGame: () => set({ phase: 'result' }),
+  finishGame: () => {
+    const { gameStartedAt, totalPlayTimeMs } = get()
+    const elapsed = totalPlayTimeMs || (gameStartedAt ? Date.now() - gameStartedAt : 0)
+    set({ phase: 'result', totalPlayTimeMs: elapsed, hasFinishedSession: true })
+  },
 
-  backToMenu: () => set({ phase: 'menu' }),
+  backToMenu: () => {
+    const { playerName, playerProdi } = get()
+    if (!playerName || !playerProdi) {
+      set({ phase: 'identity' })
+      return
+    }
+    set({ phase: 'menu', sessionId: makeSessionId() })
+  },
 }))

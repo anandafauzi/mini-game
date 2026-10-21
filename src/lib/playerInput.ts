@@ -16,9 +16,6 @@ export const playerInput: PlayerInput = {
   pointerLocked: false,
 }
 
-/** Latest virtual joystick vector (-1..1), set from the HUD. */
-export const joystick = { x: 0, y: 0 }
-
 const keys = new Set<string>()
 
 export function initKeyboard() {
@@ -52,16 +49,9 @@ export function readKeyboardMove() {
   return { x, y }
 }
 
-/** Merge keyboard + joystick into playerInput.move. */
+/** Merge keyboard + look input into playerInput. */
 export function combineInput() {
   const kb = readKeyboardMove()
-  let x = kb.x + joystick.x
-  let y = kb.y + joystick.y
-  const len = Math.hypot(x, y)
-  if (len > 1) {
-    x /= len
-    y /= len
-  }
-  playerInput.move.x = x
-  playerInput.move.y = y
+  playerInput.move.x = kb.x
+  playerInput.move.y = kb.y
 }

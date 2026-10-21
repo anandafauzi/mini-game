@@ -3,12 +3,15 @@ import * as THREE from 'three'
 import { fbm, ridged } from './noise'
 
 /**
- * Two distant ridge curtains that close the valley off at the horizon.
+ * Layered mountain backdrop.
  *
- * Each range is a vertical strip wrapped around a wobbling circle: a ridged
- * crest line with a broad swell on top, unlit and vertex-tinted so the foot of
- * the range fades into haze while the crests stay readable. Scene fog does the
- * aerial perspective for free, so the far range recedes behind the near one.
+ * Rather than cones or pyramids, each range is a tall vertical curtain wrapped
+ * around a wobbling ring: a ridged crest line modulated by a broad swell, with
+ * foothills that dip and rise irregularly. Three concentric ranges at different
+ * radii / heights give real atmospheric perspective: the nearest is dark and
+ * forested, the middle one hazy blue-green, and the farthest fades almost into
+ * the sky. Vertex colours bake the foot-to-crest gradient so the base of every
+ * range melts into the valley haze while the summits stay readable.
  */
 
 interface RangeSpec {
@@ -17,9 +20,11 @@ interface RangeSpec {
   base: number
   bottom: number
   crest: [number, number, number]
+  ridge: [number, number, number]
   haze: [number, number, number]
   seed: number
   freq: number
+  snow: number
 }
 
 function buildRidge(spec: RangeSpec, spokes: number): THREE.BufferGeometry {
@@ -28,19 +33,28 @@ function buildRidge(spec: RangeSpec, spokes: number): THREE.BufferGeometry {
   const indices = new Uint32Array(spokes * 6)
   const tmp = new THREE.Color()
 
+  const crestC = new THREE.Color(spec.crest[0], spec.crest[1], spec.crest[2])
+  const ridgeC = new THREE.Color(spec.ridge[0], spec.ridge[1], spec.ridge[2])
+
   for (let i = 0; i <= spokes; i++) {
     const a = (i / spokes) * Math.PI * 2
     const ca = Math.cos(a)
     const sa = Math.sin(a)
 
-    // the ring itself wobbles so the range never reads as a circle
-    const rr = spec.radius * (0.94 + fbm(ca * 1.3 + spec.seed, sa * 1.3 + spec.seed, 3) * 0.13)
+    // the ring itself wobbles so the range never reads as a perfect circle
+    const rr = spec.radius * (0.92 + fbm(ca * 1.3 + spec.seed, sa * 1.3 + spec.seed, 3) * 0.18)
     const x = ca * rr
     const z = sa * rr
 
+    // two noise scales: sharp ridged peaks + broad swell so summits cluster
     const n = ridged(x * spec.freq + spec.seed * 3, z * spec.freq + spec.seed * 5, 5)
-    const swell = fbm(x * spec.freq * 0.35 + 11, z * spec.freq * 0.35 + 7, 3)
-    const h = spec.base + Math.pow(n, 1.4) * spec.height * (0.4 + swell * 0.85)
+    const swell = fbm(x * spec.freq * 0.32 + 11, z * spec.freq * 0.32 + 7, 3)
+    // foothill term keeps long stretches from being flat-cut
+    const hill = fbm(x * spec.freq * 1.7 + 41, z * spec.freq * 1.7 + 23, 2)
+    const h =
+      spec.base +
+      Math.pow(n, 1.35) * spec.height * (0.35 + swell * 0.9) +
+      hill * spec.height * 0.16
 
     const k = i * 6
     positions[k] = x
@@ -50,9 +64,12 @@ function buildRidge(spec: RangeSpec, spokes: number): THREE.BufferGeometry {
     positions[k + 4] = h
     positions[k + 5] = z
 
-    // per-spoke variation keeps long stretches from looking like a printed cutout
-    const vary = 0.88 + fbm(x * 0.02 + 31, z * 0.02 + 17, 2) * 0.24
-    tmp.setRGB(spec.crest[0] * vary, spec.crest[1] * vary, spec.crest[2] * vary)
+    // colour: haze at the foot -> ridge tone at mid -> crest at the top,
+    // faintly snow-dusted on the highest peaks of the far range
+    const hn = THREE.MathUtils.clamp((h - spec.base) / spec.height, 0, 1)
+    tmp.copy(ridgeC).lerp(crestC, THREE.MathUtils.smoothstep(hn, 0.25, 0.8))
+    if (spec.snow > 0) tmp.lerp(new THREE.Color(0.92, 0.94, 0.97), hn * spec.snow * 0.5)
+
     colors[k] = spec.haze[0]
     colors[k + 1] = spec.haze[1]
     colors[k + 2] = spec.haze[2]
@@ -93,38 +110,65 @@ export function Mountains() {
     [],
   )
 
+  // Nearest range: forested, dark, sharp.
   const near = useMemo(
     () =>
       buildRidge(
         {
-          radius: 660,
-          height: 155,
-          base: 4,
+          radius: 560,
+          height: 140,
+          base: 6,
           bottom: -25,
-          crest: [0.2, 0.29, 0.27],
-          haze: [0.62, 0.71, 0.72],
+          crest: [0.22, 0.32, 0.2],
+          ridge: [0.16, 0.26, 0.16],
+          haze: [0.5, 0.6, 0.58],
           seed: 3.7,
-          freq: 0.0052,
+          freq: 0.0062,
+          snow: 0,
+        },
+        256,
+      ),
+    [],
+  )
+
+  // Middle range: hazy blue-green.
+  const mid = useMemo(
+    () =>
+      buildRidge(
+        {
+          radius: 720,
+          height: 205,
+          base: 8,
+          bottom: -28,
+          crest: [0.28, 0.36, 0.34],
+          ridge: [0.24, 0.32, 0.32],
+          haze: [0.62, 0.71, 0.72],
+          seed: 6.4,
+          freq: 0.005,
+          snow: 0.1,
         },
         224,
       ),
     [],
   )
 
+  // Far range: pale, almost sky-coloured, snow-dusted peaks.
   const far = useMemo(
     () =>
       buildRidge(
         {
-          radius: 830,
-          height: 250,
-          base: 10,
+          radius: 900,
+          height: 280,
+          base: 12,
           bottom: -30,
-          crest: [0.26, 0.33, 0.36],
-          haze: [0.7, 0.78, 0.82],
+          crest: [0.34, 0.4, 0.44],
+          ridge: [0.31, 0.38, 0.42],
+          haze: [0.71, 0.79, 0.83],
           seed: 9.1,
-          freq: 0.004,
+          freq: 0.0038,
+          snow: 0.35,
         },
-        176,
+        192,
       ),
     [],
   )
@@ -132,7 +176,8 @@ export function Mountains() {
   return (
     <group>
       <mesh geometry={near} material={material} frustumCulled={false} renderOrder={-2} />
-      <mesh geometry={far} material={material} frustumCulled={false} renderOrder={-3} />
+      <mesh geometry={mid} material={material} frustumCulled={false} renderOrder={-3} />
+      <mesh geometry={far} material={material} frustumCulled={false} renderOrder={-4} />
     </group>
   )
 }

@@ -142,15 +142,16 @@ export function Boat({ boatRef }: { boatRef: React.RefObject<BoatRef> }) {
         <primitive object={std.wood} attach="material" />
       </mesh>
 
-      {/* --- Bow post / small mast --- */}
-      <mesh position={[0, 1.2, -2.3]} castShadow>
-        <cylinderGeometry args={[0.05, 0.06, 2.0, 10]} />
+      {/* --- Bow cleat: a short low post at the very tip, kept below the
+             camera sightline so it never blocks the river view --- */}
+      <mesh position={[0, 0.42, -2.5]} rotation={[0.35, 0, 0]} castShadow>
+        <cylinderGeometry args={[0.045, 0.06, 0.34, 8]} />
         <primitive object={std.wood} attach="material" />
       </mesh>
-      {/* crossbar for rod holders */}
-      <mesh position={[0, 1.55, -2.3]} rotation={[0, 0, Math.PI / 2]}>
-        <cylinderGeometry args={[0.035, 0.035, 0.9, 8]} />
-        <primitive object={std.bamboo} attach="material" />
+      {/* rope tied around the cleat */}
+      <mesh position={[0, 0.5, -2.5]} rotation={[Math.PI / 2, 0, 0]}>
+        <torusGeometry args={[0.06, 0.014, 6, 12]} />
+        <primitive object={std.rope} attach="material" />
       </mesh>
 
       {/* --- Wooden box with folded cloth (right side) --- */}

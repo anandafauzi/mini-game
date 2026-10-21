@@ -337,6 +337,80 @@ function Birds() {
 }
 
 /* ------------------------------------------------------------------ */
+/*  Moored sampan                                                      */
+/* ------------------------------------------------------------------ */
+
+function Sampan({ x, z, rot, flip }: { x: number; z: number; rot: number; flip: number }) {
+  const mats = useMemo(
+    () => ({
+      hull: new THREE.MeshStandardMaterial({ color: '#6b4a2a', roughness: 0.9 }),
+      rim: new THREE.MeshStandardMaterial({ color: '#8a663c', roughness: 0.9 }),
+      seat: new THREE.MeshStandardMaterial({ color: '#9c7a4a', roughness: 0.92 }),
+    }),
+    [],
+  )
+  const y = 0.12
+  return (
+    <group position={[x, y, z]} rotation={[0, rot, 0]} scale={[flip, 1, 1]}>
+      {/* dugout hull: a long half-cylinder sunk to the waterline */}
+      <mesh position={[0, -0.16, 0]} rotation={[0, 0, Math.PI / 2]} castShadow material={mats.hull}>
+        <cylinderGeometry args={[0.28, 0.28, 3.1, 12, 1, false, 0, Math.PI]} />
+      </mesh>
+      {/* gunwale rails along both sides */}
+      <mesh position={[0, 0.02, 0.27]} rotation={[0, 0, Math.PI / 2]} material={mats.rim}>
+        <cylinderGeometry args={[0.035, 0.035, 3.0, 6]} />
+      </mesh>
+      <mesh position={[0, 0.02, -0.27]} rotation={[0, 0, Math.PI / 2]} material={mats.rim}>
+        <cylinderGeometry args={[0.035, 0.035, 3.0, 6]} />
+      </mesh>
+      {/* cross seats */}
+      {[-0.6, 0.5].map((z0, i) => (
+        <mesh key={i} position={[0, 0.0, z0]} material={mats.seat}>
+          <boxGeometry args={[0.62, 0.05, 0.16]} />
+        </mesh>
+      ))}
+      {/* a leaning bamboo pole resting across the sampan */}
+      <mesh position={[0.1, 0.18, 0]} rotation={[Math.PI / 2, 0, 0.12]} material={mats.rim}>
+        <cylinderGeometry args={[0.025, 0.025, 3.4, 6]} />
+      </mesh>
+    </group>
+  )
+}
+
+function Sampans() {
+  const spots = useMemo(() => {
+    const wanted: Array<{ cx: number; cz: number }> = [
+      { cx: 40, cz: -22 },
+      { cx: -46, cz: -70 },
+    ]
+    const out: Array<{ x: number; z: number; rot: number; flip: number }> = []
+    wanted.forEach(({ cx, cz }, i) => {
+      // walk out to the water's edge (t ~ 0) near the requested spot
+      for (let k = 0; k < 400; k++) {
+        const a = seededRandom(k * 1.9 + cx) * Math.PI * 2
+        const r = Math.pow(seededRandom(k * 2.9 + cz), 0.6) * 22
+        const x = cx + Math.cos(a) * r
+        const z = cz + Math.sin(a) * r
+        const s = sampleLand(x, z)
+        if (Math.abs(s.t) < 0.9 && s.h < 2.0) {
+          out.push({ x, z, rot: seededRandom(i * 5.1) * Math.PI * 2, flip: i % 2 === 0 ? 1 : -1 })
+          break
+        }
+      }
+    })
+    return out
+  }, [])
+
+  return (
+    <group>
+      {spots.map((s, i) => (
+        <Sampan key={i} {...s} />
+      ))}
+    </group>
+  )
+}
+
+/* ------------------------------------------------------------------ */
 
 export function Props() {
   const density = useGraphics((s) => s.settings.instancingDensity)
@@ -357,6 +431,7 @@ export function Props() {
       <InstancedRocks geometry={geoB} spots={split.b} />
       <RockRipples rocks={rocks} />
       <Huts />
+      <Sampans />
       <Birds />
     </group>
   )

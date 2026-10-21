@@ -19,6 +19,19 @@ export interface Equipment {
   reelLevel: number
 }
 
+/** Per-species record kept for the encyclopedia / collection. */
+export interface SpeciesRecord {
+  speciesId: string
+  /** how many times this species has been caught */
+  count: number
+  /** heaviest specimen caught (kg) */
+  bestWeight: number
+  /** longest specimen caught (cm) */
+  bestLengthCm: number
+  /** first time it was caught */
+  firstCaughtAt: number
+}
+
 export interface ProgressState {
   xp: number
   money: number
@@ -30,6 +43,8 @@ export interface ProgressState {
   currentBait: BaitId
   baits: Record<BaitId, number>
   equipment: Equipment
+  /** Encyclopedia progress keyed by species id. */
+  speciesRecords: Record<string, SpeciesRecord>
 
   addCatch: (rec: CatchRecord) => void
   sellCatch: (id: string) => void
@@ -63,6 +78,7 @@ function initialState() {
     currentBait: 'cacing' as BaitId,
     baits: defaultBaits(),
     equipment: { rodLevel: 1, lineLevel: 1, reelLevel: 1 } as Equipment,
+    speciesRecords: {} as Record<string, SpeciesRecord>,
   }
 }
 
@@ -79,6 +95,10 @@ function loadPersisted(): Partial<ProgressState> {
       baits: { ...base.baits, ...(parsed.baits ?? {}) },
       equipment: { ...base.equipment, ...(parsed.equipment ?? {}) },
       collection: Array.isArray(parsed.collection) ? parsed.collection : [],
+      speciesRecords:
+        parsed.speciesRecords && typeof parsed.speciesRecords === 'object'
+          ? parsed.speciesRecords
+          : {},
     }
   } catch {
     return {}
@@ -101,6 +121,7 @@ function persist(state: ProgressState) {
         currentBait: state.currentBait,
         baits: state.baits,
         equipment: state.equipment,
+        speciesRecords: state.speciesRecords,
       }),
     )
   } catch {
@@ -121,6 +142,22 @@ export const useProgress = create<ProgressState>((set, get) => ({
       xp -= xpForLevel(level)
       level += 1
     }
+    const prev = s.speciesRecords[rec.speciesId]
+    const record: SpeciesRecord = prev
+      ? {
+          speciesId: rec.speciesId,
+          count: prev.count + 1,
+          bestWeight: Math.max(prev.bestWeight, rec.weight),
+          bestLengthCm: Math.max(prev.bestLengthCm, rec.lengthCm),
+          firstCaughtAt: prev.firstCaughtAt,
+        }
+      : {
+          speciesId: rec.speciesId,
+          count: 1,
+          bestWeight: rec.weight,
+          bestLengthCm: rec.lengthCm,
+          firstCaughtAt: rec.caughtAt,
+        }
     set({
       ...s,
       xp,
@@ -129,6 +166,7 @@ export const useProgress = create<ProgressState>((set, get) => ({
       totalCaught: s.totalCaught + 1,
       bestWeight: rec.weight > s.bestWeight ? rec.weight : s.bestWeight,
       bestWeightName: rec.weight > s.bestWeight ? rec.name : s.bestWeightName,
+      speciesRecords: { ...s.speciesRecords, [rec.speciesId]: record },
     })
     persist(get())
   },

@@ -1,89 +1,96 @@
 import { useEffect, useState } from 'react'
 import { useGame } from '../lib/gameState'
-import { fetchTopLeaderboard, submitScore, supabaseEnabled, type LeaderboardEntry } from '../lib/supabase'
-import { submitScoreToSheet } from '../lib/sheetScore'
-import { formatDuration } from './Leaderboard'
+import { submitQuizResult, sheetScoreEnabled } from '../lib/sheetScore'
 
 export function ResultScreen() {
   const phase = useGame((s) => s.phase)
   const playerName = useGame((s) => s.playerName)
-  const score = useGame((s) => s.score)
+  const playerProdi = useGame((s) => s.playerProdi)
+  const correctCount = useGame((s) => s.correctCount)
+  const wrongCount = useGame((s) => s.wrongCount)
   const totalPlayTimeMs = useGame((s) => s.totalPlayTimeMs)
   const results = useGame((s) => s.results)
-  const backToMenu = useGame((s) => s.backToMenu)
+  const sessionId = useGame((s) => s.sessionId)
   const startGame = useGame((s) => s.startGame)
+  const backToMenu = useGame((s) => s.backToMenu)
 
   const [submitted, setSubmitted] = useState(false)
-  const [top, setTop] = useState<LeaderboardEntry[]>([])
+  const [submitStatus, setSubmitStatus] = useState<'idle' | 'sending' | 'ok' | 'error'>('idle')
+  const [submitMsg, setSubmitMsg] = useState('')
 
-  const correctCount = results.filter((r) => r.correct).length
-  const caughtCount = results.filter((r) => r.caught).length
-  const escapedCount = results.length - caughtCount
+  const totalQuestions = results.length > 0 ? results.length : 10
+  const correct = correctCount || results.filter((r) => r.correct).length
+  const wrong = wrongCount || (totalQuestions - correct)
+  const finalScore = Math.round((correct / Math.max(1, totalQuestions)) * 100)
 
   useEffect(() => {
-    if (phase !== 'result' || submitted) return
+    if (phase !== 'result') {
+      setSubmitted(false)
+      setSubmitStatus('idle')
+      setSubmitMsg('')
+      return
+    }
+    if (submitted || !sheetScoreEnabled) return
     setSubmitted(true)
-    // kirim skor ke spreadsheet kelas (opsional) dan/atau leaderboard Supabase
-    submitScoreToSheet(playerName, score, totalPlayTimeMs)
-    if (supabaseEnabled) {
-      submitScore(playerName, score, totalPlayTimeMs).then(() =>
-        fetchTopLeaderboard(10).then(setTop),
-      )
-    }
-  }, [phase, submitted, playerName, score, totalPlayTimeMs])
+    setSubmitStatus('sending')
 
-  useEffect(() => {
-    if (phase === 'result' && supabaseEnabled) {
-      fetchTopLeaderboard(10).then(setTop)
-    }
-  }, [phase])
+    submitQuizResult({
+      fullName: playerName,
+      prodi: playerProdi,
+      sessionId,
+      answers: results.map((r) => ({ questionId: r.questionId, choice: null })),
+      durationMs: totalPlayTimeMs,
+    })
+      .then((res) => {
+        if (res.ok) {
+          setSubmitStatus('ok')
+          setSubmitMsg('Hasil tersimpan')
+        } else {
+          setSubmitStatus('error')
+          setSubmitMsg(res.error || 'Gagal menyimpan')
+        }
+      })
+      .catch(() => {
+        setSubmitStatus('error')
+        setSubmitMsg('Kesalahan jaringan')
+      })
+  }, [phase, submitted, sheetScoreEnabled, playerName, playerProdi, sessionId, results, totalPlayTimeMs])
 
   if (phase !== 'result') return null
 
   return (
     <div data-ui className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
       <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
-        <h2 className="text-center text-2xl font-black text-emerald-800">Hasil Mancing!</h2>
+        <h2 className="text-center text-2xl font-black text-emerald-800">Hasil Kuis</h2>
         <p className="mt-1 text-center text-sm text-gray-500">{playerName}</p>
+        <p className="text-center text-xs text-gray-400">{playerProdi}</p>
 
         <div className="mt-4 rounded-xl bg-emerald-50 p-4 text-center">
-          <div className="text-4xl font-black text-emerald-600">{score}</div>
-          <div className="text-sm text-gray-500">Total Skor</div>
+          <div className="text-4xl font-black text-emerald-600">{finalScore}</div>
+          <div className="text-sm text-gray-500">Nilai Akhir (0–100)</div>
         </div>
 
         <div className="mt-3 grid grid-cols-3 gap-2 text-center text-sm">
           <div className="rounded-lg bg-green-50 p-2">
-            <div className="font-bold text-green-700">{correctCount}</div>
+            <div className="font-bold text-green-700">{correct}</div>
             <div className="text-xs text-gray-500">Benar</div>
           </div>
-          <div className="rounded-lg bg-amber-50 p-2">
-            <div className="font-bold text-amber-700">{escapedCount}</div>
-            <div className="text-xs text-gray-500">Ikan Lolos</div>
+          <div className="rounded-lg bg-red-50 p-2">
+            <div className="font-bold text-red-700">{wrong}</div>
+            <div className="text-xs text-gray-500">Salah</div>
           </div>
           <div className="rounded-lg bg-blue-50 p-2">
-            <div className="font-bold text-blue-700">{formatDuration(totalPlayTimeMs)}</div>
-            <div className="text-xs text-gray-500">Waktu</div>
+            <div className="font-bold text-blue-700">{totalQuestions}</div>
+            <div className="text-xs text-gray-500">Total Soal</div>
           </div>
         </div>
 
-        {supabaseEnabled && top.length > 0 && (
-          <div className="mt-4">
-            <h3 className="text-sm font-bold text-gray-700">🏆 Top 10</h3>
-            <ol className="mt-1 max-h-44 space-y-1 overflow-y-auto">
-              {top.map((e, i) => (
-                <li
-                  key={e.id}
-                  className={`flex justify-between rounded px-2 py-1 text-xs ${
-                    e.player_name === playerName && e.score === score ? 'bg-amber-100 font-bold' : 'bg-gray-50'
-                  }`}
-                >
-                  <span className="truncate">{i + 1}. {e.player_name}</span>
-                  <span className="shrink-0 tabular-nums">{e.score} · {formatDuration(e.duration_ms)}</span>
-                </li>
-              ))}
-            </ol>
-          </div>
-        )}
+        <div className="mt-2 text-center text-xs text-gray-500">
+          Skor disimpan{sheetScoreEnabled ? '' : ' (offline)'}
+          {submitStatus === 'sending' && ' · menyimpan...'}
+          {submitStatus === 'ok' && ` · ${submitMsg}`}
+          {submitStatus === 'error' && ` · ${submitMsg}`}
+        </div>
 
         <div className="mt-5 flex gap-2">
           <button

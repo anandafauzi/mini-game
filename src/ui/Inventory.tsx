@@ -3,14 +3,14 @@ import { RARITY_LABEL } from '../lib/fish'
 import type { BaitId } from '../lib/fish'
 
 const BAIT_INFO: Record<BaitId, { label: string; emoji: string; desc: string }> = {
-  cacing: { label: 'Cacing', emoji: '🪱', desc: 'Kakap merah, kerapu & hiu menyukainya' },
-  pelet: { label: 'Pelet', emoji: '🟤', desc: 'Ikan kecil, tongkol & napoleon' },
-  lumut: { label: 'Lumut', emoji: '🌿', desc: 'Baronang & napoleon suka' },
-  daun: { label: 'Daun', emoji: '🍃', desc: 'Bawal hitam & baronang' },
-  artifisial: { label: 'Umpan Tiruan', emoji: '✨', desc: 'Tuna, marlin, hiu & tenggiri' },
+  cacing: { label: 'Cacing', emoji: '🪱', desc: 'Lele, baung, gabus & patin paling doyan' },
+  pelet: { label: 'Pelet', emoji: '🟤', desc: 'Nila, mujair, mas & ikan peliharaan suka' },
+  lumut: { label: 'Lumut', emoji: '🌿', desc: 'Tawes, gurami, betok & belida' },
+  daun: { label: 'Daun', emoji: '🍃', desc: 'Tawes, gurami & kancra menyukainya' },
+  artifisial: { label: 'Umpan Tiruan', emoji: '✨', desc: 'Mancing ganas: arwana & gabus besar' },
 }
 
-export function Inventory({ onClose }: { onClose: () => void }) {
+export function Inventory({ onClose, onOpenBook }: { onClose: () => void; onOpenBook: () => void }) {
   const baits = useProgress((s) => s.baits)
   const currentBait = useProgress((s) => s.currentBait)
   const setBait = useProgress((s) => s.setBait)
@@ -18,6 +18,7 @@ export function Inventory({ onClose }: { onClose: () => void }) {
   const upgrade = useProgress((s) => s.upgrade)
   const money = useProgress((s) => s.money)
   const collection = useProgress((s) => s.collection)
+  const speciesRecords = useProgress((s) => s.speciesRecords)
 
   const upCost = (lvl: number) => 500 + lvl * 750
 
@@ -32,12 +33,20 @@ export function Inventory({ onClose }: { onClose: () => void }) {
       <div className="max-h-[85vh] w-full max-w-md overflow-y-auto rounded-2xl border border-white/15 bg-slate-900/95 p-5 text-white shadow-2xl">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-black">Tas Pancing</h2>
-          <button
-            onClick={onClose}
-            className="rounded-lg bg-white/10 px-3 py-1 text-sm font-bold hover:bg-white/20"
-          >
-            Tutup
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={onOpenBook}
+              className="rounded-lg bg-sky-500/20 px-3 py-1 text-sm font-bold text-sky-200 hover:bg-sky-500/30"
+            >
+              📖 Ensiklopedia
+            </button>
+            <button
+              onClick={onClose}
+              className="rounded-lg bg-white/10 px-3 py-1 text-sm font-bold hover:bg-white/20"
+            >
+              Tutup
+            </button>
+          </div>
         </div>
 
         <div className="mt-3 text-sm font-bold text-emerald-300">
@@ -100,7 +109,7 @@ export function Inventory({ onClose }: { onClose: () => void }) {
         </div>
 
         <h3 className="mt-4 text-xs font-bold uppercase tracking-wide text-white/50">
-          Koleksi Ikan ({collection.length})
+          Koleksi Ikan ({collection.length}) · Spesies {Object.keys(speciesRecords).length}
         </h3>
         <div className="mt-2 space-y-1">
           {collection.length === 0 && (

@@ -126,12 +126,16 @@ const fragmentShader = /* glsl */ `
     // colour follows the real bed depth: silt-green shallows, teal, dark green
     vec3 col = mix(uColorShallow, uColorMid, smoothstep(0.06, 0.65, depth));
     col = mix(col, uColorDeep, smoothstep(0.65, 2.0, depth));
-    float alpha = mix(0.58, 0.96, smoothstep(0.0, 1.1, depth));
+    // shallower water is more see-through so the sunlit bed (and rocks) show
+    float alpha = mix(0.34, 0.9, smoothstep(0.0, 1.0, depth));
+
+    // gentle refraction-style sway of the bed tint under the ripples
+    col += vec3(rf.y, rf.z, rf.x) * 0.04 * (1.0 - smoothstep(0.05, 0.9, depth));
 
     // sky reflection takes over at grazing angles
     float fres = pow(1.0 - clamp(dot(N, V), 0.0, 1.0), 4.0);
-    col = mix(col, uSkyColor, fres * 0.72);
-    alpha = mix(alpha, 0.97, fres * 0.7);
+    col = mix(col, uSkyColor, fres * 0.7);
+    alpha = mix(alpha, 0.96, fres * 0.65);
 
     // sun sheen: a broad soft glow plus one tight highlight
     vec3 H = normalize(uSunDir + V);
@@ -174,9 +178,9 @@ export function RiverWater() {
       uSunDir: { value: new THREE.Vector3(0.4, 0.55, -0.73).normalize() },
       uSunColor: { value: new THREE.Color('#ffe9c8') },
       uSkyColor: { value: new THREE.Color('#b9d4e6') },
-      uColorShallow: { value: new THREE.Color('#4f7f72') },
-      uColorMid: { value: new THREE.Color('#2f6a6b') },
-      uColorDeep: { value: new THREE.Color('#1b4650') },
+      uColorShallow: { value: new THREE.Color('#6f9a7c') },
+      uColorMid: { value: new THREE.Color('#33696a') },
+      uColorDeep: { value: new THREE.Color('#1d4a4e') },
       uFogColor: { value: new THREE.Color('#c8dae6') },
       uFogNear: { value: settings.fogNear },
       uFogFar: { value: settings.fogFar },

@@ -1,9 +1,8 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useGame } from '../lib/gameState'
 import { useProgress, xpForLevel } from '../lib/progress'
 import { useTime, formatClock } from '../lib/timeOfDay'
 import { useFishingAction } from '../lib/useFishingAction'
-import { joystick } from '../lib/playerInput'
 
 function Icon({ path, className = '' }: { path: string; className?: string }) {
   return (
@@ -91,70 +90,24 @@ function FishCounter() {
   )
 }
 
-function Joystick() {
-  const baseRef = useRef<HTMLDivElement>(null)
-  const [knob, setKnob] = useState({ x: 0, y: 0 })
-  const active = useRef(false)
-
-  const move = (clientX: number, clientY: number) => {
-    const el = baseRef.current
-    if (!el) return
-    const r = el.getBoundingClientRect()
-    const cx = r.left + r.width / 2
-    const cy = r.top + r.height / 2
-    const max = r.width / 2 - 14
-    let dx = clientX - cx
-    let dy = clientY - cy
-    const len = Math.hypot(dx, dy)
-    if (len > max) {
-      dx = (dx / len) * max
-      dy = (dy / len) * max
-    }
-    setKnob({ x: dx, y: dy })
-    joystick.x = dx / max
-    joystick.y = -dy / max
-  }
-
+function CameraHint() {
+  const [show, setShow] = useState(true)
   useEffect(() => {
-    const onMove = (e: PointerEvent) => {
-      if (!active.current) return
-      move(e.clientX, e.clientY)
-    }
-    const onUp = () => {
-      active.current = false
-      setKnob({ x: 0, y: 0 })
-      joystick.x = 0
-      joystick.y = 0
-    }
-    window.addEventListener('pointermove', onMove)
-    window.addEventListener('pointerup', onUp)
-    return () => {
-      window.removeEventListener('pointermove', onMove)
-      window.removeEventListener('pointerup', onUp)
-    }
+    const t = window.setTimeout(() => setShow(false), 5000)
+    return () => window.clearTimeout(t)
   }, [])
-
+  if (!show) return null
   return (
     <div
       data-ui
-      ref={baseRef}
-      onPointerDown={(e) => {
-        active.current = true
-        move(e.clientX, e.clientY)
-      }}
-      className="fixed bottom-6 left-6 z-30 h-32 w-32 touch-none rounded-full border border-white/20 bg-white/5 backdrop-blur-sm"
+      className="pointer-events-none fixed left-1/2 top-16 z-20 -translate-x-1/2 rounded-full border border-white/15 bg-black/45 px-4 py-1.5 text-[11px] font-bold text-white/80 backdrop-blur-md transition-opacity"
     >
-      <div className="absolute left-1/2 top-1/2 h-24 w-24 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/10" />
-      <div
-        className="absolute left-1/2 top-1/2 h-14 w-14 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/30 shadow-lg backdrop-blur"
-        style={{ transform: `translate(calc(-50% + ${knob.x}px), calc(-50% + ${knob.y}px))` }}
-      />
+      Geser layar / gerakkan mouse untuk melihat sekeliling
     </div>
   )
 }
 
-export function FishingControls() {
-  const phase = useGame((s) => s.phase)
+export function FishingControls() {  const phase = useGame((s) => s.phase)
   const { state, trigger } = useFishingAction()
 
   if (phase !== 'fishing') return null
@@ -197,7 +150,7 @@ export function FishingControls() {
   )
 }
 
-export function Hud({ onPause, onOpenBag }: { onPause: () => void; onOpenBag: () => void }) {
+export function Hud({ onPause, onOpenBag, onOpenBook }: { onPause: () => void; onOpenBag: () => void; onOpenBook: () => void }) {
   const phase = useGame((s) => s.phase)
   if (phase !== 'fishing') return null
 
@@ -206,7 +159,7 @@ export function Hud({ onPause, onOpenBag }: { onPause: () => void; onOpenBag: ()
       <TopLeft />
       <TopRight onPause={onPause} />
       <FishCounter />
-      <Joystick />
+      <CameraHint />
       <button
         data-ui
         onClick={onOpenBag}
@@ -214,6 +167,14 @@ export function Hud({ onPause, onOpenBag }: { onPause: () => void; onOpenBag: ()
       >
         <span className="text-xl">🎒</span>
         <span className="text-[9px] font-bold">Tas</span>
+      </button>
+      <button
+        data-ui
+        onClick={onOpenBook}
+        className="fixed bottom-6 left-[15.5rem] z-30 flex h-14 w-14 flex-col items-center justify-center rounded-2xl border border-white/15 bg-black/45 text-white backdrop-blur-md transition hover:bg-black/60 active:scale-95"
+      >
+        <span className="text-xl">📖</span>
+        <span className="text-[9px] font-bold">Ikan</span>
       </button>
     </>
   )
