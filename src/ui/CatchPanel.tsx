@@ -62,7 +62,7 @@ export function CatchPanel() {
 
   return (
     <>
-      <div data-ui className="fixed inset-0 z-40 flex items-center justify-center bg-black/55 p-4 backdrop-blur-sm">
+      <div data-ui className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4">
         <div className={`w-full max-w-sm overflow-hidden rounded-2xl border border-white/15 bg-slate-900/95 text-white ${glow}`}>
           <div
             className="px-6 py-3 text-center text-sm font-black uppercase tracking-wider"
